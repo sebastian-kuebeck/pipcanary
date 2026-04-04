@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=63.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evilpack"
+version = "0.0.1"
+authors = [
+  { name="Hackster", email="hackster@evilpack.example.com" },
+]
+description = "Process manager"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+]
+
+[project.urls]
+"Homepage" = "http://example.com/evilpack"
+"Documentation" = "http://example.com/evilpack"
+"Bug Tracker" = "http://example.com/evilpack"

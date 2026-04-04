@@ -1,0 +1,18 @@
+# Runtime
+requests>=2.33.0
+virtualenv~=21.2.0
+
+# Build
+build~=1.4.0
+
+# Formatting
+black~=26.3.1
+
+# Validation
+ruff~=0.15.7
+Pyright~=1.1.408
+pip-audit~=2.10.0
+
+#Testing
+pytest~=9.0.2
+tox~=4.50.3

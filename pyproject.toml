@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=63.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pipcanary"
+version = "0.0.1"
+authors = [
+  { name="Sebastian Kuebeck", email="sebastian.kuebeck@encab.io" },
+]
+description = "Rogue Package Detector"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = []
+
+[project.urls]
+"Homepage" = "https://github.com/sebastian-kuebeck/pipcanary"
+"Documentation" = "https://github.com/sebastian-kuebeck/pipcanary"
+"Bug Tracker" = "https://github.com/sebastian-kuebeck/pipcanary"
+
+[project.scripts]
+encab = "pipcanary.pipcanary:run"
+
+[tool.ruff]
+line-length = 120
