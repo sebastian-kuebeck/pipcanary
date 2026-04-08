@@ -1,83 +1,102 @@
 # PipCanary
 
+**Supply Chain Attack Prevention Tool for Python Packages**
+
+PipCanary helps protect your Python projects from supply chain attacks by:
+
+- Detecting suspicious filesystem behavior in package installation (e.g., access to SSH keys, sensitive directories, etc.)
+- Enforcing a **cool-down period** on newly uploaded package versions, giving security researchers and scanners time to identify malicious releases
+
+It acts as a safety layer on top of your existing dependency management workflow.
+
 ## Features
 
-- Detects Supply Chain Attacks in Python packages
-
-- Makes sure that new package releases are only installed after a cool down period, so secuity scanners have time to detect vulnerabilities
+- **Behavioral analysis** during package installation using `strace` and `bubblewrap` sandboxing
+- **Upload time checks** warns about packages released too recently (default: 7 days)
+- Simple CLI integration with `requirements.txt` or other dependency files
+- Clear, actionable warnings and recommendations when risks are detected
 
 ## Maturity
 
-The project is in early stages. However, it's safer to use this than pip, poetry or uv alone.
+This project is in **early development**. While it already provides meaningful protection, expect occasional rough edges.
+
+However, it's more secure than using plain `pip`, `poetry`, or `uv` without additional safeguards.
 
 ## Requirements
 
 - Linux 
-
 - [Python](https://www.python.org/) 3.10 or higher
-
-- [bubblewrap](https://github.com/containers/bubblewrap)
-
-- [strace](https://strace.io)
-
+- [bubblewrap](https://github.com/containers/bubblewrap) (sandboxing tool)
+- [strace](https://strace.io) (file access tracking)
 - [pip](https://pip.pypa.io/en/stable/getting-started/)
+
+
+### Installing dependencies on Ubuntu/Debian
+
+```bash
+sudo apt update
+sudo apt install bubblewrap strace
+pip install pipcanary
+```
 
 ## Installation
 
 ```bash
-    pip install pipcanary
+pipcanary -r requirements.txt
 ```
 
-## Execution
+## Usage
 
-Check your requirements for potential Supply Chain Attacks
+### Basic Check
+
+Scan a `requirements.txt` for potential supply chain risks:
 
 ```bash
-    pipcanary -r requirements.txt
+pipcanary -r requirements.txt
 ```
 
-Sample output when all is fine...
+### Example Outputs
+
+#### All packages look safe:
 
 ```text
-    ...
-    All packages appear to be safe!    
+...
+All packages appear to be safe!
 ```
 
-Sample output if a potential attack is detected...
+#### Suspicious behaviour detected:
 
 ```text
-    ...
-    Found suspicious access to /root/.ssh in package evilpack
+...
+Found suspicious access to /root/.ssh in package evilpack
 
-    This could be dangerous!!!
-    Don't install this package under any circumstances until you know for sure that this is a false positive!
-    In doubt, contact the package maintainers!
+This could be dangerous!!!
+Don't install this package under any circumstances until you know for sure that this is a false positive.
+In doubt, contact the package maintainers!
 ```
 
-Sample output when packages were updated during the cooling of phase of one week...
+#### Recently uploaded packages (cool-down warning):
 
 ```text
-    ...
-    Package click 8.3.2 was updated too recently: 2026-04-03T19:14:45. 
-    It might be safer to use an older version.
-    Consider click<=8.3.1 or earlier and check for potential known vulnerabilities of this version.
-    If you are certain that the latest upload is safe, add the following argument...
+...
+Package click 8.3.2 was updated too recently: 2026-04-03T19:14:45.
+It might be safer to use an older version.
+Consider click<=8.3.1 or earlier and check for known vulnerabilities.
+
+If you are certain that the latest version is safe, you can allow it with:
+
     --allow-upload-time='click<=2026-04-03T19:14:45'
-
-    Package Werkzeug 3.1.8 was updated too recently: 2026-04-02T18:49:14. 
-    It might be safer to use an older version.
-    Consider Werkzeug<=3.1.7 or earlier and check for potential known vulnerabilities of this version.
-    If you are certain that the latest upload is safe, add the following argument...
-    --allow-upload-time='Werkzeug<=2026-04-02T18:49:14'
-
-    The following packages were uploaded too recently: click, Werkzeug
 ```
 
 ## Similar Projects
 
 - [pip-audit](https://github.com/pypa/pip-audit)
 
-## Further Information on PyPi Suppy Chaion Attacks
+## Further Information on PyPi Suppy Chain Attacks
 
 - [How a Poisoned Security Scanner Became the Key to Backdooring LiteLLM](https://snyk.io/de/articles/poisoned-security-scanner-backdooring-litellm/)
 - [The Team PCP Snowball Effect: A Quantitative Analysis](https://blog.gitguardian.com/team-pcp-snowball-analysis/)
+
+## License
+
+MIT License
