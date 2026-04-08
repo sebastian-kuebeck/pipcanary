@@ -1,8 +1,2 @@
-- Refactoring/Unit Tests
-- pyright/ruff
-- tox tests
-- Additional bwrap path
-- Finish evilpack
-- Recommendations for older versions
-- Version exclusion --allow-newer "ruff, 2026-04-03 16:30:00"
-- Documentation
+- Improve documentation
+- Support for pyproject.toml dependencies

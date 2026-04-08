@@ -1,5 +1,4 @@
 # Runtime
-requests>=2.33.0
 virtualenv~=21.2.0
 
 # Build
