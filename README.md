@@ -68,10 +68,13 @@ All packages appear to be safe!
 
 ```text
 ...
-Found suspicious access to /root/.ssh in package evilpack
+Found suspicious access to /home/sebastian/.ssh in package evilpack.
+
+Description: SSH private key exfiltration.
+Explanation: The package might be trying to steal your Secure Shell private keys.
 
 This could be dangerous!!!
-Don't install this package under any circumstances until you know for sure that this is a false positive.
+Don't install this package under any circumstances until you know for sure that this is a false positive!
 In doubt, contact the package maintainers!
 ```
 

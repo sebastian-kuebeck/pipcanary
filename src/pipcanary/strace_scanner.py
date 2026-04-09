@@ -53,7 +53,6 @@ RULE_SET = [
     {
         "patterns": [
             "/.config/gcloud",
-            "/.config/",
         ],
         "designation": "home_directories",
         "description": "Google Cloud private key exfiltration.",
