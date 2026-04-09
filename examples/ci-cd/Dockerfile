@@ -24,14 +24,14 @@ RUN pip install pip-audit
 
 # --------------------------------------------
 # Install PipCanary from PyPi
-RUN pip install pipcanary
+# RUN pip install pipcanary
 
 # --------------------------------------------
 # Install PipCanary from wheel
 # 
-# ARG WHEEL=pipcanary-0.0.4-py3-none-any.whl
-# ADD ${WHEEL} .
-# RUN pip install ${WHEEL}
+ARG WHEEL=pipcanary-0.0.6-py3-none-any.whl
+ADD ${WHEEL} .
+RUN pip install ${WHEEL}
 
 COPY requirements.txt requirements.txt
 

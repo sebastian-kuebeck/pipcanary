@@ -1,6 +1,6 @@
 .PHONY:	clean_dist dist test validate format apidoc html doc browse publish_test build_evilpack
 
-export PYTHONPATH=src:tests/unit
+export PYTHONPATH=src:tests
 
 clean_dist:
 	rm -rf dist/*
@@ -31,6 +31,10 @@ integration_tests:
 build_evilpack:
 	cd evilpack && python -m build
 
+# Install with
+# 
+# python -m pip install --index-url https://test.pypi.org/simple/ pipcanary
+#
 publish_test: dist
 	twine upload -r testpypi dist/*
 

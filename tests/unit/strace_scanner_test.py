@@ -48,6 +48,11 @@ class StraceCredentialsExfiltrationRuleSetTest(unittest.TestCase):
         self.assertEqual("/root/.ssh", finding.indication)
         self.assertEqual("any", finding.package)
 
+    def test_warnings_and_errors(self) -> None:
+        self.assertEqual("Error: ", self.rule_set.warnings_or_errors("Error: "))
+        self.assertIsNone(self.rule_set.warnings_or_errors("[pid 420784] statx"))
+        self.assertIsNone(self.rule_set.warnings_or_errors("execve"))
+
 
 class TestScannerObserver(ScannerObserver):
     __test__ = False

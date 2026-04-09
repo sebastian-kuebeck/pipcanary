@@ -32,48 +32,17 @@ cp -v $MODULE_LOADER_SOURCE $MODULE_LOADER
 # Wait for scanner
 sleep 0.5
 
-# Installing packages with network
+chdir $VIRTUAL_ENV
+export PATH="$VIRTUAL_ENV/bin:/usr/bin"
+
+echo "Running without bubblewrap. Stop with kill -9 $$ if it's not running in a suitable sandbox!"
+
+# Installing packages
 strace -f -e trace=file \
-bwrap \
-  --unshare-user \
-  --share-net \
-  --die-with-parent \
-  --uid 0 --gid 0 \
-  --new-session \
-  --ro-bind $PYTHON_DIR $PYTHON_DIR \
-  --bind $VIRTUAL_ENV $VIRTUAL_ENV \
-  --proc /proc \
-  --dev /dev \
-  --ro-bind /usr /usr \
-  --ro-bind /lib /lib \
-  --ro-bind /lib64 /lib64 \
-  --ro-bind /etc/ssl/certs/ /etc/ssl/certs/ \
-  --ro-bind /etc/resolv.conf /etc/resolv.conf \
-  --ro-bind $ADDITIONAL_DIRECTORY $ADDITIONAL_DIRECTORY \
-  --clearenv \
-  --setenv HOME "/root" \
-  --setenv PATH "$VIRTUAL_ENV/bin:/usr/bin" \
-  --chdir $VIRTUAL_ENV \
   pip install --no-cache -r requirements.txt
 
-# Loading modules without network and further file access restrictions
+# Loading modules
 strace -f -e trace=file \
-bwrap \
-  --unshare-user \
-  --die-with-parent \
-  --uid 0 --gid 0 \
-  --new-session \
-  --ro-bind $PYTHON_DIR $PYTHON_DIR \
-  --bind $VIRTUAL_ENV $VIRTUAL_ENV \
-  --proc /proc \
-  --dev /dev \
-  --ro-bind /usr /usr \
-  --ro-bind /lib /lib \
-  --ro-bind /lib64 /lib64 \
-  --clearenv \
-  --setenv HOME "/root" \
-  --setenv PATH "$VIRTUAL_ENV/bin:/usr/bin" \
-  --chdir $VIRTUAL_ENV \
   sh -c "python $MODULE_LOADER && pip list --format=json > packages.json"
 
 if [ -z "${PIPCANARY_VIRTUAL_ENV+x}" ]; then

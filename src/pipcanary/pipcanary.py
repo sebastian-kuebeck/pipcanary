@@ -6,11 +6,14 @@ import tempfile
 import json
 import shutil
 import time
+import argparse
 
 from subprocess import CalledProcessError
 from typing import List, Dict, Any, Optional
 from argparse import ArgumentParser
 from datetime import datetime
+
+from .requirements import Requirements, RequirementsError
 
 from .strace_scanner import (
     StraceScanner,
@@ -83,14 +86,25 @@ If you are certain that the latest upload is safe, add the following argument...
             print("No suitable version uploaded yet.")
 
 
-INSTALL_SCRIPT = os.path.join(os.path.dirname(__file__), "sbpip_scan.sh")
-# INSTALL_SCRIPT = os.path.join(os.path.dirname(__file__), 'sbpip_test.sh')
+SCAN_SCRIPT_SANDBOXED = os.path.join(os.path.dirname(__file__), "sbpip_scan.sh")
+SCAN_SCRIPT = os.path.join(os.path.dirname(__file__), "spip_scan.sh")
 
 parser = ArgumentParser(
     prog="PipCanary", description="Detects supply chain attacks in python dependencies"
 )
 
-parser.add_argument("-r", "--requirement")
+parser.add_argument(
+    "-r", "--requirement", help=("The requirements file, usually requirements.txt.")
+)
+parser.add_argument(
+    "-p",
+    "--project",
+    help=(
+        "The project file in TOML format. Usually pyproject.toml. "
+        "If neither -p or -r are set, ./pyproject.toml or if not exists ./requirements.txt is scanned."
+    ),
+)
+
 parser.add_argument(
     "--max-upload-time",
     help=(
@@ -128,23 +142,44 @@ parser.add_argument(
     help=("The trace file for further analysis"),
 )
 
+parser.add_argument(
+    "--sandbox",
+    help=(
+        "Run with sandbox (default). No sandbox might be safe if you are already running within a sandbox!"
+    ),
+    action=argparse.BooleanOptionalAction,
+    default=True,
+)
+
+parser.add_argument(
+    "--do-not-scan",
+    action="append",
+    help=("Add packages that should not be scanned"),
+)
+
 
 def scan_packages(
-    requirement_file: str,
+    requirements: Requirements,
     additional_directory: Optional[str],
     trace_file: Optional[str],
+    sandbox: bool,
 ) -> List[Dict[str, Any]]:
     home_directory = os.environ["HOME"]
 
+    if sandbox:
+        check_command("bwrap", ["sh", "-c", "bwrap --version 1>/dev/null"])
+
     env = {
-        "REQUIREMENTS_FILE": requirement_file,
         **dict(os.environ),
     }
 
     if additional_directory:
         env["PIPCANARY_ADDITIONAL_DIRECTORY"] = os.path.abspath(additional_directory)
 
-    command = ["sh", INSTALL_SCRIPT]
+    command = ["sh", SCAN_SCRIPT_SANDBOXED if sandbox else SCAN_SCRIPT]
+
+    requirements_file = requirements.write_to_temporary_file()
+    env["REQUIREMENTS_FILE"] = requirements_file
 
     venv_directory = tempfile.mkdtemp(suffix="-pipcanary")
     process = None
@@ -171,13 +206,23 @@ def scan_packages(
             raise ScanFailedError(
                 process.returncode, "Scan failed with rc %d" % process.returncode
             )
-        with open(os.path.join(venv_directory, "packages.json"), "r") as f:
+
+        packages_file = os.path.join(venv_directory, "packages.json")
+        if not os.path.exists(packages_file):
+            raise ScanFailedError(-1, "Scan failed for unknown reason")
+        with open(packages_file, "r") as f:
             return json.load(f)
     except SuspiciousAccessDetected as e:
         if process:
             os.kill(process.pid, signal.SIGKILL)
         raise e
     finally:
+        for i in range(3):
+            try:
+                os.remove(requirements_file)
+            except OSError:
+                time.sleep(i)
+
         for i in range(3):
             try:
                 shutil.rmtree(venv_directory)
@@ -220,15 +265,37 @@ def pipcanary():
     args = parser.parse_args()
     check_package("venv", ["sh", "-c", "python3 -m venv --help 1>/dev/null"])
     check_command("strace", ["sh", "-c", "strace -V 1>/dev/null"])
-    check_command("bwrap", ["sh", "-c", "bwrap --version 1>/dev/null"])
 
     try:
         requirement_file = args.requirement
+        project_file = args.project
+
+        if requirement_file and project_file:
+            raise InvalidArgumentError("Either --requirement or --project but not both")
+
+        if not requirement_file and not project_file:
+            if os.path.exists("pyproject.toml"):
+                project_file = "pyproject.toml"
+                print("Using ./pyproject.toml")
+            elif os.path.exists("requirements.txt"):
+                requirement_file = "requirements.txt"
+                print("Using ./requirements.txt")
+
+        if project_file:
+            requirements = Requirements.from_project_file(project_file)
+        else:
+            requirements = Requirements.from_requirements_file(requirement_file)
+
+        do_not_scan = args.do_not_scan
+        if do_not_scan:
+            requirements.skip_packages(do_not_scan)
+
         trace_file = args.trace_file
         selection = PackageSelection(
             args.max_upload_time, args.cool_down_phase_days, args.allow_upload_time
         )
         additional_directory = args.additional_directory
+        sandbox = args.sandbox
 
         if not requirement_file:
             requirement_file = os.path.join(os.path.curdir, "requirements.txt")
@@ -238,10 +305,12 @@ def pipcanary():
                 "Requirements file %s does not exist" % requirement_file
             )
 
-        packages = scan_packages(requirement_file, additional_directory, trace_file)
+        packages = scan_packages(
+            requirements, additional_directory, trace_file, sandbox
+        )
         check_package_uploads(packages, selection)
         print("All packages appear to be safe!")
-    except (InvalidArgumentError, PackageAgumentError) as e:
+    except (InvalidArgumentError, PackageAgumentError, RequirementsError) as e:
         print(str(e), file=sys.stderr)
         exit(1)
     except ScanFailedError as e:

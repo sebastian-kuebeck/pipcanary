@@ -1,1 +1,2 @@
 include src/pipcanary/sbpip_scan.sh
+include src/pipcanary/spip_scan.sh

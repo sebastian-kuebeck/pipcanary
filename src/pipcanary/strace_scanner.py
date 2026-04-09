@@ -155,6 +155,33 @@ class AccessRule:
 
 
 class StraceCredentialsExfiltrationRuleSet(RuleSet):
+    STRACE_PREFIXES = [
+        "execve",
+        "access",
+        "openat",
+        "newfstatat",
+        "stat",
+        "statfs",
+        "readlink",
+        "rmdir",
+        "mkdir",
+        "unlink",
+        "lstat",
+        "getcwd",
+        "{st_mode=",
+        "+++",
+        "---",
+        "strace: Process",
+        "[pid",
+        ")",
+        "Package: "
+    ]
+
+    @classmethod
+    def compile_strace_prefixes(cls) -> Pattern:
+        return re.compile(
+            r"^%s" % "|".join([f"({re.escape(p)})" for p in cls.STRACE_PREFIXES])
+        )
 
     @staticmethod
     def compile_package_rule(venv_directory: str) -> Pattern:
@@ -181,6 +208,7 @@ class StraceCredentialsExfiltrationRuleSet(RuleSet):
     def __init__(self, home_directory: str, venv_directory: str) -> None:
         self.package_rule = self.compile_package_rule(venv_directory)
         self.rules = self.compile_rules(home_directory)
+        self.strace_prefix_pattern = self.compile_strace_prefixes()
 
     def identify_resource(self, line: str) -> Optional[str]:
         if line.startswith("Package: "):
@@ -195,7 +223,7 @@ class StraceCredentialsExfiltrationRuleSet(RuleSet):
                 return finding
 
     def warnings_or_errors(self, line: str) -> Optional[str]:
-        if line.startswith("WARNING: ") or line.startswith("ERROR: "):
+        if not self.strace_prefix_pattern.match(line):
             return line
 
 
