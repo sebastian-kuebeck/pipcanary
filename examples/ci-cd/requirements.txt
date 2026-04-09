@@ -1,0 +1,10 @@
+# Popular packages
+botocore<=1.42.81
+boto3<=1.42.81
+click<=8.3.1
+Werkzeug<=3.1.7
+charset-normalizer<=3.4.6
+requests
+flask
+pyyaml
+numpy

@@ -16,6 +16,7 @@ from .strace_scanner import (
     StraceScanner,
     StraceCredentialsExfiltrationRuleSet,
     ScannerObserver,
+    Finding,
 )
 
 from .packages import (
@@ -44,18 +45,18 @@ class UploadVerificationFailedError(Exception):
 
 
 class SuspiciousAccessDetected(Exception):
-    pass
+    def __init__(self, finding: Finding) -> None:
+        super().__init__(finding.description)
+        self.finding = finding
 
 
 class AlertingScannerObserver(ScannerObserver):
 
     def resource_identified(self, resource: str):
-        print("Scanning package install: %s..." % resource)
+        print("Scanning package activity: %s..." % resource)
 
-    def match_detected(self, resource: str, pattern: str):
-        raise SuspiciousAccessDetected(
-            "Found suspicious access to %s in package %s" % (pattern, resource),
-        )
+    def match_detected(self, finding: Finding):
+        raise SuspiciousAccessDetected(finding)
 
 
 class PrintingPackageCheckObserver(PackageCheckObserver):
@@ -63,7 +64,7 @@ class PrintingPackageCheckObserver(PackageCheckObserver):
     def package_not_found(self, package: Package):
         print(f"Package {package.name} not found on pypi")
 
-    def package_too_recently(
+    def package_upload_too_recently(
         self, package: Package, upload_time: datetime, latest_upload_time: datetime
     ):
         print(
@@ -100,7 +101,7 @@ parser.add_argument(
 parser.add_argument(
     "-c",
     "--cool-down-phase-days",
-    help=("Cool down phase for packages in days for new package uploads. Default: 7"),
+    help=("Cool-down phase for packages in days for new package uploads. Default: 7"),
 )
 parser.add_argument(
     "-a",
@@ -257,13 +258,14 @@ def pipcanary():
         print(str(e), file=sys.stderr)
         exit(4)
     except SuspiciousAccessDetected as e:
-        msg = f"""
-{str(e)}.
+        print(file=sys.stderr)
+        e.finding.write(sys.stderr)  # type: ignore
+        disclaimer = """
 This could be dangerous!!!
 Don't install this package under any circumstances until you know for sure that this is a false positive!
 In doubt, contact the package maintainers!
 """
-        print(msg, file=sys.stderr)
+        print(disclaimer, file=sys.stderr)
         exit(5)
 
     except KeyboardInterrupt:

@@ -1,9 +1,13 @@
 import re
 import unittest
 
+from typing import List
+
 from pipcanary.strace_scanner import (
     StraceCredentialsExfiltrationRuleSet,
     ScannerObserver,
+    Finding,
+    StraceScanner,
 )
 
 
@@ -37,23 +41,51 @@ class StraceCredentialsExfiltrationRuleSetTest(unittest.TestCase):
 
     def test_match_ssh(self) -> None:
         finding = self.rule_set.match(
-            '[pid 420784] statx(AT_FDCWD, "/root/.ssh", AT_STATX_SYNC_AS_STAT|AT_SYMLINK_NOFOLLOW|AT_NO_AUTOMOUNT, STATX_MODE|STATX_NLINK|STATX_UID'
+            "any",
+            '[pid 420784] statx(AT_FDCWD, "/root/.ssh", AT_STATX_SYNC_AS_STAT|AT_SYMLINK_NOFOLLOW|AT_NO_AUTOMOUNT, STATX_MODE|STATX_NLINK|STATX_UID',
         )
-        self.assertEqual("/root/.ssh", finding)
+        assert finding
+        self.assertEqual("/root/.ssh", finding.indication)
+        self.assertEqual("any", finding.package)
 
 
 class TestScannerObserver(ScannerObserver):
     __test__ = False
 
-    def __init__(self, pid: int) -> None:
-        self.pid = pid
+    def __init__(self) -> None:
+        self.resources: List[str] = []
+        self.findings: List[Finding] = []
 
     def resource_identified(self, resource: str):
-        pass
+        self.resources.append(resource)
 
-    def match_detected(self, resource: str, pattern: str):
-        pass
+    def match_detected(self, finding: Finding):
+        self.findings.append(finding)
 
 
 class StraceScannerTest(unittest.TestCase):
-    pass
+    def setUp(self):
+        rule_set = StraceCredentialsExfiltrationRuleSet(
+            "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary"
+        )
+        self.observer = TestScannerObserver()
+        self.scanner = StraceScanner(rule_set, self.observer, None)
+
+    def test_scan(self):
+        self.scanner.scan(
+            iter(
+                [
+                    "Package: any",
+                    '[pid 420784] statx(AT_FDCWD, "/root/.ssh", AT_STATX_SYNC_AS_STAT|AT_SYMLINK_NOFOLLOW|AT_NO_AUTOMOUNT, STATX_MODE|STATX_NLINK|STATX_UID',
+                ]
+            )
+        )
+        self.assertEqual(1, len(self.observer.resources))
+        self.assertEqual(1, len(self.observer.findings))
+
+        resource = self.observer.resources[0]
+        finding = self.observer.findings[0]
+
+        self.assertEqual("any", resource)
+        self.assertEqual(resource, finding.package)
+        self.assertEqual("/root/.ssh", finding.indication)

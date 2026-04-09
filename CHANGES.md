@@ -1,5 +1,11 @@
 # Changes
 
-## 0.0.3 (2026-04-08)
+## 0.0.5 (2026-04-05)
+
+- Added Docker support
+- Improved explanation of findings
+- Fixed moule loading for more recent Python versions
+
+## 0.0.4 (2026-04-08)
 
 - Initial import

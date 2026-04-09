@@ -91,6 +91,7 @@ If you are certain that the latest version is safe, you can allow it with:
 ## Similar Projects
 
 - [pip-audit](https://github.com/pypa/pip-audit)
+- [guarddog](https://github.com/DataDog/guarddog)
 
 ## Further Information on PyPi Suppy Chain Attacks
 

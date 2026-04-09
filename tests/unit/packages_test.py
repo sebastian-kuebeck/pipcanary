@@ -108,7 +108,7 @@ class TestPackageCheckObserver(PackageCheckObserver):
     def package_not_found(self, package: Package):
         self.not_found.append(package)
 
-    def package_too_recently(
+    def package_upload_too_recently(
         self, package: Package, upload_time: datetime, latest_upload_time: datetime
     ):
         self.too_recently.append(package)

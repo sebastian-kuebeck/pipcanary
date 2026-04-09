@@ -148,7 +148,7 @@ class PackageCheckObserver(ABC):
         pass
 
     @abstractmethod
-    def package_too_recently(
+    def package_upload_too_recently(
         self, package: Package, upload_time: datetime, latest_upload_time: datetime
     ):
         pass
@@ -224,7 +224,7 @@ class Packages:
             if upload_time > (
                 latest_upload_time := selection.max_upload_time(package.name)
             ):
-                self.observer.package_too_recently(
+                self.observer.package_upload_too_recently(
                     package, upload_time, latest_upload_time
                 )
                 recent_packages.append(package)
