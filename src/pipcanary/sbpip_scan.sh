@@ -32,6 +32,10 @@ cp -v $MODULE_LOADER_SOURCE $MODULE_LOADER
 # Wait for scanner
 sleep 0.5
 
+pip_install="pip install -r requirements.txt ${PIP_OPTIONS}"
+
+echo "Starting: $pip_install..."
+
 # Installing packages with network
 strace -f -e trace=file \
 bwrap \
@@ -54,7 +58,7 @@ bwrap \
   --setenv HOME "/root" \
   --setenv PATH "$VIRTUAL_ENV/bin:/usr/bin" \
   --chdir $VIRTUAL_ENV \
-  pip install --no-cache -r requirements.txt
+  sh -c "$pip_install"
 
 # Loading modules without network and further file access restrictions
 strace -f -e trace=file \

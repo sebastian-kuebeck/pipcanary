@@ -13,7 +13,15 @@ from typing import List, Dict, Any, Optional
 from argparse import ArgumentParser
 from datetime import datetime
 
-from .requirements import Requirements, RequirementsError
+from .errors import (
+    InvalidArgumentError,
+    ScanFailedError,
+    UploadVerificationFailedError,
+    PackageDownloadError,
+    RequirementsError
+)
+
+from .requirements import Requirements
 
 from .strace_scanner import (
     StraceScanner,
@@ -24,27 +32,13 @@ from .strace_scanner import (
 
 from .packages import (
     Packages,
+    PipOptions,
     PypiPackageSource,
     PackageCheckObserver,
     Package,
-    PackageDownloadError,
     PackageSelection,
     PackageAgumentError,
 )
-
-
-class InvalidArgumentError(Exception):
-    pass
-
-
-class ScanFailedError(Exception):
-    def __init__(self, rc: int, message: str) -> None:
-        super().__init__(message)
-        self.rc = rc
-
-
-class UploadVerificationFailedError(Exception):
-    pass
 
 
 class SuspiciousAccessDetected(Exception):
@@ -157,12 +151,31 @@ parser.add_argument(
     help=("Add packages that should not be scanned"),
 )
 
+parser.add_argument(
+    "-i",
+    "--index-url",
+    help=("URL to PyPi compatible repository"),
+)
+
+parser.add_argument(
+    "--extra-index-url",
+    help=("Extra URL to PyPi compatible repository"),
+)
+
+parser.add_argument(
+    "--uploaded-prior-to",
+    help=(
+        "Pip option --uploaded-prior-to. ISO 8601 date and time format. Only available in pip v26.0.1 and newer."
+    ),
+)
+
 
 def scan_packages(
     requirements: Requirements,
     additional_directory: Optional[str],
     trace_file: Optional[str],
     sandbox: bool,
+    pip_options: PipOptions,
 ) -> List[Dict[str, Any]]:
     home_directory = os.environ["HOME"]
 
@@ -172,6 +185,8 @@ def scan_packages(
     env = {
         **dict(os.environ),
     }
+
+    env["PIP_OPTIONS"] = pip_options.encode_for_shell()
 
     if additional_directory:
         env["PIPCANARY_ADDITIONAL_DIRECTORY"] = os.path.abspath(additional_directory)
@@ -231,10 +246,10 @@ def scan_packages(
 
 
 def check_package_uploads(
-    package_list: List[Dict[str, Any]], selection: PackageSelection
+    package_list: List[Dict[str, Any]], selection: PackageSelection, options: PipOptions
 ):
     print("Checking the most recent package uploads...\n")
-    packages = Packages(PypiPackageSource(), PrintingPackageCheckObserver())
+    packages = Packages(PypiPackageSource(options), PrintingPackageCheckObserver())
     packages.load(package_list)
     recent_packages = packages.check_uploads(selection)
 
@@ -269,6 +284,10 @@ def pipcanary():
     try:
         requirement_file = args.requirement
         project_file = args.project
+
+        pip_options = PipOptions(
+            args.index_url, args.extra_index_url, args.uploaded_prior_to
+        )
 
         if requirement_file and project_file:
             raise InvalidArgumentError("Either --requirement or --project but not both")
@@ -306,9 +325,9 @@ def pipcanary():
             )
 
         packages = scan_packages(
-            requirements, additional_directory, trace_file, sandbox
+            requirements, additional_directory, trace_file, sandbox, pip_options
         )
-        check_package_uploads(packages, selection)
+        check_package_uploads(packages, selection, pip_options)
         print("All packages appear to be safe!")
     except (InvalidArgumentError, PackageAgumentError, RequirementsError) as e:
         print(str(e), file=sys.stderr)

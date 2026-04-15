@@ -19,6 +19,7 @@ format:
 validate:
 	pyright src tests
 	ruff check src tests
+
 audit:
 	pip-audit -r requirements.txt
 

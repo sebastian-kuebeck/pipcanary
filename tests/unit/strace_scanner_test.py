@@ -69,6 +69,7 @@ class TestScannerObserver(ScannerObserver):
 
 
 class StraceScannerTest(unittest.TestCase):
+
     def setUp(self):
         rule_set = StraceCredentialsExfiltrationRuleSet(
             "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary"

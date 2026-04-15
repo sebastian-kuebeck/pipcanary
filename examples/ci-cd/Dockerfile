@@ -29,7 +29,7 @@ RUN pip install pip-audit
 # --------------------------------------------
 # Install PipCanary from wheel
 # 
-ARG WHEEL=pipcanary-0.0.6-py3-none-any.whl
+ARG WHEEL=pipcanary-0.0.7-py3-none-any.whl
 ADD ${WHEEL} .
 RUN pip install ${WHEEL}
 

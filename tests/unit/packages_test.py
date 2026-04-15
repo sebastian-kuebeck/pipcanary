@@ -11,6 +11,7 @@ from pipcanary.packages import (
     Package,
     PackageCheckObserver,
     PackageSelection,
+    PipOptions,
 )
 
 
@@ -142,3 +143,14 @@ class TestPackages(unittest.TestCase):
         self.selection.current_time = datetime.fromisoformat("2025-11-24T14:19:19")
         too_recent_packages = self.packages.check_uploads(self.selection)
         self.assertEqual(1, len(too_recent_packages))
+
+
+class TestPipOptions(unittest.TestCase):
+    def test_encode_to_shell(self):
+        options = PipOptions(
+            "http://localhost:3141/root/pypi/+simple/", None, "2023-01-01T00:00:00Z"
+        )
+        self.assertEqual(
+            "--index-url http://localhost:3141/root/pypi/+simple/ --uploaded-prior-to 2023-01-01T00:00:00+00:00",
+            options.encode_for_shell(),
+        )

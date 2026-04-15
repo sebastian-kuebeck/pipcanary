@@ -5,6 +5,9 @@ from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+from shlex import quote
+
+from .errors import InvalidArgumentError, PackageDownloadError
 
 
 class Upload:
@@ -78,17 +81,58 @@ class PackageSource(ABC):
         pass
 
 
-class PackageDownloadError(Exception):
-    def __init__(self, package_name: str, msg: str, parent: Exception) -> None:
-        super().__init__(msg)
-        self.package_name = package_name
-        self.parent = parent
+class PipOptions:
+    DEFAULT_INDEX_URL = "https://pypi.org/pypi/"
+
+    def __init__(
+        self,
+        index_url: Optional[str] = None,
+        extra_index_url: Optional[str] = None,
+        uploaded_prior_to: Optional[Union[str, datetime]] = None,
+    ) -> None:
+        self._index_url = index_url
+        self._extra_index_url = extra_index_url
+
+        self._uploaded_prior_to: Optional[datetime] = None
+        if uploaded_prior_to:
+            print(uploaded_prior_to)
+            if isinstance(uploaded_prior_to, datetime):
+                self._uploaded_prior_to = uploaded_prior_to
+            elif isinstance(uploaded_prior_to, str):
+                try:
+                    self._uploaded_prior_to = datetime.fromisoformat(uploaded_prior_to)
+                except ValueError:
+                    raise InvalidArgumentError(
+                        "Malformed ISO 8601 string for option --uploaded-prior-to"
+                    )
+            else:
+                assert False, "Invalid uploaded_prior_to type"
+
+    @property
+    def index_url(self) -> str:
+        url = self.DEFAULT_INDEX_URL
+        if not url.endswith("/"):
+            url += "/"
+        return url
+
+    def encode_for_shell(self) -> str:
+        s = ""
+        if self._index_url:
+            s += "--index-url %s" % quote(self._index_url)
+        if self._extra_index_url:
+            s += " --extra-index-url %s" % quote(self._extra_index_url)
+        if self._uploaded_prior_to:
+            s += " --uploaded-prior-to %s" % quote(self._uploaded_prior_to.isoformat())
+        return s.strip()
 
 
 class PypiPackageSource(PackageSource):
+    def __init__(self, options: PipOptions) -> None:
+        self.options = options
+
     def download_package_info(self, package_name: str) -> Optional[PackageInfo]:
         try:
-            response = urlopen(f"https://pypi.org/pypi/{package_name}/json")
+            response = urlopen(f"{self.options.index_url}{package_name}/json")
             package_info_data = json.load(response)
             return PackageInfo.from_json(package_info_data)
         except HTTPError as e:

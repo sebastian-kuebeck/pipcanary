@@ -7,7 +7,7 @@ dist:
 	cp ../../dist/pipcanary-*-py3-none-any.whl .
 
 build: dist
-	docker build --build-arg ENCAB_WHEEL=`ls pipcanary-*-py3-none-any.whl` -t pipcanary-cicd .
+	docker build --build-arg WHEEL=`ls pipcanary-*-py3-none-any.whl` -t pipcanary-cicd .
 	rm pipcanary-*-py3-none-any.whl
 
 run:

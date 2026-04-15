@@ -11,6 +11,7 @@ RULE_SET = [
         "patterns": [
             "/proc/1/comm",
             "/proc/1/cgroup",
+            "/proc/self/environ",
         ],
         "designation": "root_directory",
         "description": "Namespace detection.",
@@ -65,6 +66,14 @@ RULE_SET = [
         "designation": "home_directories",
         "description": "NPM private key exfiltration.",
         "explanation": "The package might be trying to steal your npm credentials.",
+    },
+    {
+        "patterns": [
+            "/.azure",
+        ],
+        "designation": "home_directories",
+        "description": "Azure private key exfiltration.",
+        "explanation": "The package might be trying to steal your Azure credentials.",
     },
 ]
 
@@ -173,7 +182,7 @@ class StraceCredentialsExfiltrationRuleSet(RuleSet):
         "strace: Process",
         "[pid",
         ")",
-        "Package: "
+        "Package: ",
     ]
 
     @classmethod

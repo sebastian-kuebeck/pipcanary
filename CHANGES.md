@@ -1,5 +1,9 @@
 # Changes
 
+## 0.0.7 (2026-04-15)
+ 
+ - Added pip options index URL and uploaded-prior-to
+
 ## 0.0.6 (2026-04-05)
 
 - Added TOML support

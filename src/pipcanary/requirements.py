@@ -5,13 +5,11 @@ import tempfile
 
 from typing import List, Optional
 
-
-class RequirementsError(Exception):
-    pass
+from .errors import RequirementsError
 
 
 class Requirements:
-    PYPI_REQUIREMENT = re.compile(r"^([a-zA-Z][a-zA-Z0-9-_]*)([=><!]|\w).*")
+    PYPI_REQUIREMENT = re.compile(r"^([a-zA-Z][a-zA-Z0-9-_]*)([=><!\^\~]|\w).*")
 
     def __init__(self, requirements: List[str]) -> None:
         self.requirements = requirements
