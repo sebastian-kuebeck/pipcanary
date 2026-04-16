@@ -1,5 +1,9 @@
 # PipCanary
 
+[![PyPI version](https://img.shields.io/pypi/v/pipcanary.svg)](https://pypi.org/project/pipcanary/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/pipcanary.svg)](https://pypi.python.org/pypi/pipcanary.svg)
+
 **Supply Chain Attack Prevention Tool for Python Packages**
 
 PipCanary helps protect your Python projects from supply chain attacks by:
@@ -13,10 +17,8 @@ It acts as a safety layer on top of your existing dependency management workflow
 ## Features
 
 - **Behavioral analysis** during package installation and loading using `strace` and `bubblewrap` sandboxing
-- **Known vulnmerability checks** warns about known vulnerabilities.
+- **Known vulnmerability checks** warns about known vulnerabilities
 - **Upload time checks** warns about packages released too recently (default: 7 days)
-- Simple CLI integration with `requirements.txt` or other dependency files
-- Clear, actionable warnings and recommendations when risks are detected
 
 ## Limitations
 
@@ -24,9 +26,7 @@ There are natural limitations to all checks PipCanary performs so running PipCan
 
 ## Maturity
 
-This project is in **early development**. While it already provides meaningful protection, expect occasional rough edges.
-
-However, it's more secure than using plain `pip`, `poetry`, or `uv` without additional safeguards.
+This project is in **early development**. While it already provides meaningful protection, expect occasional rough edges. However, it's more secure than using plain `pip`, `poetry`, or `uv` without additional safeguards.
 
 ## Requirements
 
@@ -42,13 +42,12 @@ However, it's more secure than using plain `pip`, `poetry`, or `uv` without addi
 ```bash
 sudo apt update
 sudo apt install bubblewrap strace
-pip install pipcanary
 ```
 
 ## Installation
 
 ```bash
-pipcanary -r requirements.txt
+pip install pipcanary
 ```
 
 ## Usage
@@ -59,6 +58,13 @@ Scan a `requirements.txt` for potential supply chain risks:
 
 ```bash
 pipcanary -r requirements.txt
+```
+
+without argument, it checks the `pyproject.toml` or `requirements.txt` in the current directory.
+
+
+```bash
+pipcanary
 ```
 
 ### Example Outputs
@@ -83,23 +89,17 @@ This could be dangerous!!!
 Don't install this package under any circumstances until you know for sure that this is a false positive!
 In doubt, contact the package maintainers!
 ```
-#### Known vulnerabilities:
+
+Not that PipCanary immediately kills the scanning process once it detects suspicious behaviour to
+prevent damage!
+
+#### Known vulnerabilities detected:
 
 ```text
 ...
-Package click 8.3.2 was updated too recently: 2026-04-03T19:14:45.
+Package pip:25.0.1 has known vulnerabilities: ECHO-ffe1-1d3c-d9bc, ECHO-7db2-03aa-5591, GHSA-6vgw-5pg2-w6jp, GHSA-4xh5-x5gv-qwph.
 
-Consider click<=8.1.8 which has no known vulnerabilities.
-
-If you are certain that the latest upload is secure, add the following argument...
-    --allow-upload-time='click<=2026-04-03T19:14:45'
-
-Package Flask 3.1.3 was updated too recently: 2026-02-19T05:00:57.
-
-The next suitable release Flask: 3.1.0 has known vulnerabilities though: GHSA-4grg-w6v8-c28g, GHSA-68rp-wp8r-4726
-
-If you are certain that the latest upload is secure, add the following argument...
-    --allow-upload-time='Flask<=2026-02-19T05:00:57'
+Vulnerabilities in the following package(s) were found: pip:25.0.1.
 ```
 
 #### Recently uploaded packages (cool-down warning):
@@ -166,6 +166,3 @@ options:
 - [How a Poisoned Security Scanner Became the Key to Backdooring LiteLLM](https://snyk.io/de/articles/poisoned-security-scanner-backdooring-litellm/)
 - [The Team PCP Snowball Effect: A Quantitative Analysis](https://blog.gitguardian.com/team-pcp-snowball-analysis/)
 
-## License
-
-MIT License
