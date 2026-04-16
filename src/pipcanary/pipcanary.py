@@ -16,9 +16,9 @@ from datetime import datetime
 from .errors import (
     InvalidArgumentError,
     ScanFailedError,
-    UploadVerificationFailedError,
+    AuditFailedError,
     PackageDownloadError,
-    RequirementsError
+    RequirementsError,
 )
 
 from .requirements import Requirements
@@ -30,14 +30,17 @@ from .strace_scanner import (
     Finding,
 )
 
-from .packages import (
-    Packages,
+from .package_auditor import (
+    PackageAuditor,
     PipOptions,
+    PackageSource,
     PypiPackageSource,
-    PackageCheckObserver,
+    PackageAuditObserver,
     Package,
-    PackageSelection,
-    PackageAgumentError,
+    Version,
+    VersionInfo,
+    AuditSelection,
+    AuditReport,
 )
 
 
@@ -56,7 +59,27 @@ class AlertingScannerObserver(ScannerObserver):
         raise SuspiciousAccessDetected(finding)
 
 
-class PrintingPackageCheckObserver(PackageCheckObserver):
+class PrintingPackageAuditObserver(PackageAuditObserver):
+    def __init__(self, source: PackageSource, selection: AuditSelection) -> None:
+        self._source = source
+        self._selection = selection
+
+    def version_is_vulnerable(self, info: VersionInfo):
+        remaining_vulns = info.vulnerability_ids(self._selection.ignore_vulns)
+        vulns_ignored = len(info.vulnerability_ids()) - len(remaining_vulns)
+        remaining_vulns_listed = ", ".join(remaining_vulns)
+
+        if vulns_ignored:
+            print(
+                f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}. {vulns_ignored} vulnerabilities ignored."
+            )
+        else:
+            print(
+                f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}."
+            )
+
+    def version_not_found(self, version: Version):
+        print(f"Package {str(version)} not found on pypi")
 
     def package_not_found(self, package: Package):
         print(f"Package {package.name} not found on pypi")
@@ -65,15 +88,31 @@ class PrintingPackageCheckObserver(PackageCheckObserver):
         self, package: Package, upload_time: datetime, latest_upload_time: datetime
     ):
         print(
-            f"""Package {package.name} {package.version} was updated too recently: {upload_time.isoformat()}. 
-It might be safer to use an older version."""
+            f"""Package {package.name} {package.version} was updated too recently: {upload_time.isoformat()}."""
         )
         upload = package.latest_possible_upload(latest_upload_time)
         if upload:
+            info = self._source.download_version_info(
+                Version(package.name, upload.version)
+            )
+
+            if not info:
+                print(
+                    f"\nThere is no security information on PyPi about the next suitable release {package.name}: {upload.version}"
+                )
+            elif info.has_vulnerabilities:
+                vulns = ", ".join(info.vulnerability_ids())
+                print(
+                    f"\nThe next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulns}"
+                )
+            else:
+                print(
+                    f"\nConsider {package.name}<={upload.version} which has no known vulnerabilities."
+                )
+
             print(
-                f"""Consider {package.name}<={upload.version} or earlier and check for potential known vulnerabilities of this version.
-If you are certain that the latest upload is safe, add the following argument...
---allow-upload-time='{package.name}<={upload_time.isoformat()}'
+                f"""\nIf you are certain that the latest upload is secure, add the following argument...
+    --allow-upload-time='{package.name}<={upload_time.isoformat()}'
 """
             )
         else:
@@ -163,10 +202,9 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--uploaded-prior-to",
-    help=(
-        "Pip option --uploaded-prior-to. ISO 8601 date and time format. Only available in pip v26.0.1 and newer."
-    ),
+    "--ignore-vuln",
+    action="append",
+    help=("Ignore the given vulnerability"),
 )
 
 
@@ -182,11 +220,7 @@ def scan_packages(
     if sandbox:
         check_command("bwrap", ["sh", "-c", "bwrap --version 1>/dev/null"])
 
-    env = {
-        **dict(os.environ),
-    }
-
-    env["PIP_OPTIONS"] = pip_options.encode_for_shell()
+    env = {**dict(os.environ), "PIPCANARY_PIP_OPTIONS": pip_options.encode_for_shell()}
 
     if additional_directory:
         env["PIPCANARY_ADDITIONAL_DIRECTORY"] = os.path.abspath(additional_directory)
@@ -194,7 +228,7 @@ def scan_packages(
     command = ["sh", SCAN_SCRIPT_SANDBOXED if sandbox else SCAN_SCRIPT]
 
     requirements_file = requirements.write_to_temporary_file()
-    env["REQUIREMENTS_FILE"] = requirements_file
+    env["PIPCANARY_REQUIREMENTS_FILE"] = requirements_file
 
     venv_directory = tempfile.mkdtemp(suffix="-pipcanary")
     process = None
@@ -245,19 +279,30 @@ def scan_packages(
                 time.sleep(i)
 
 
-def check_package_uploads(
-    package_list: List[Dict[str, Any]], selection: PackageSelection, options: PipOptions
-):
-    print("Checking the most recent package uploads...\n")
-    packages = Packages(PypiPackageSource(options), PrintingPackageCheckObserver())
-    packages.load(package_list)
-    recent_packages = packages.check_uploads(selection)
+def audit_packages(
+    package_list: List[Dict[str, Any]], selection: AuditSelection, options: PipOptions
+) -> AuditReport:
+    print("Auditing the most recent package uploads...\n")
+    source = PypiPackageSource(options)
+    packages = PackageAuditor(source, PrintingPackageAuditObserver(source, selection))
+    report = packages.audit(selection, package_list)
 
-    if recent_packages:
-        raise UploadVerificationFailedError(
-            "The following packages were uploaded too recently: %s"
-            % (", ".join([p.name for p in recent_packages]))
+    message = ""
+
+    if report.vulnerable_versions:
+        message += "\nVulnerabilities in the following package(s) were found: %s." % (
+            ", ".join([str(v.version) for v in report.vulnerable_versions])
         )
+
+    if report.too_recent_packages:
+        message += "\nThe following package(s) were uploaded too recently: %s." % (
+            ", ".join([p.name for p in report.too_recent_packages])
+        )
+
+    if report.hasFindings():
+        raise AuditFailedError(message)
+
+    return report
 
 
 def check_command(command: str, test_command: List[str]):
@@ -285,9 +330,7 @@ def pipcanary():
         requirement_file = args.requirement
         project_file = args.project
 
-        pip_options = PipOptions(
-            args.index_url, args.extra_index_url, args.uploaded_prior_to
-        )
+        pip_options = PipOptions(args.index_url, args.extra_index_url)
 
         if requirement_file and project_file:
             raise InvalidArgumentError("Either --requirement or --project but not both")
@@ -310,8 +353,11 @@ def pipcanary():
             requirements.skip_packages(do_not_scan)
 
         trace_file = args.trace_file
-        selection = PackageSelection(
-            args.max_upload_time, args.cool_down_phase_days, args.allow_upload_time
+        selection = AuditSelection(
+            max_upload_time=args.max_upload_time,
+            cool_down_phase_days=args.cool_down_phase_days,
+            allowed_upload_times=args.allow_upload_time,
+            ignore_vulns=args.ignore_vuln,
         )
         additional_directory = args.additional_directory
         sandbox = args.sandbox
@@ -327,9 +373,13 @@ def pipcanary():
         packages = scan_packages(
             requirements, additional_directory, trace_file, sandbox, pip_options
         )
-        check_package_uploads(packages, selection, pip_options)
-        print("All packages appear to be safe!")
-    except (InvalidArgumentError, PackageAgumentError, RequirementsError) as e:
+        report = audit_packages(packages, selection, pip_options)
+
+        if not report.ignored_vulns:
+            print("All packages appear to be safe!")
+        else:
+            print("%d vulnerabilities ignored." % len(report.ignored_vulns))
+    except (InvalidArgumentError, RequirementsError) as e:
         print(str(e), file=sys.stderr)
         exit(1)
     except ScanFailedError as e:
@@ -342,7 +392,7 @@ def pipcanary():
             file=sys.stderr,
         )
         exit(3)
-    except UploadVerificationFailedError as e:
+    except AuditFailedError as e:
         print(str(e), file=sys.stderr)
         exit(4)
     except SuspiciousAccessDetected as e:

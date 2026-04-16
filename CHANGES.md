@@ -1,5 +1,10 @@
 # Changes
 
+## 0.0.8 (2026-04-16)
+
+- Added known vulnerability checks
+- PipCanary can now be used instead of pip-audit
+
 ## 0.0.7 (2026-04-15)
  
  - Added pip options index URL and uploaded-prior-to

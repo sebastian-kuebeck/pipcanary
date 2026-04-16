@@ -14,7 +14,7 @@ from pipcanary.strace_scanner import (
 class StraceCredentialsExfiltrationRuleSetTest(unittest.TestCase):
     def setUp(self) -> None:
         self.rule_set = StraceCredentialsExfiltrationRuleSet(
-            "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary"
+            "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary" # nosec
         )
 
     def test_identify_resource_during_install(self) -> None:
@@ -72,7 +72,7 @@ class StraceScannerTest(unittest.TestCase):
 
     def setUp(self):
         rule_set = StraceCredentialsExfiltrationRuleSet(
-            "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary"
+            "/testuser", "/tmp/tmp.tFxEKCJMPB-pipcanary" # nosec
         )
         self.observer = TestScannerObserver()
         self.scanner = StraceScanner(rule_set, self.observer, None)

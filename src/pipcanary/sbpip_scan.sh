@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REQUIREMENTS_FILE=${REQUIREMENTS_FILE:-requirements.txt}
+REQUIREMENTS_FILE=${PIPCANARY_REQUIREMENTS_FILE:-requirements.txt}
 PYTHON3=`which python`
 
 PYTHON_BIN="$(dirname $PYTHON3)"
@@ -25,16 +25,14 @@ cp -v $REQUIREMENTS_FILE $VIRTUAL_ENV/requirements.txt
 MODULE_LOADER_SOURCE=$(dirname "$0")/module_loader.py
 MODULE_LOADER=$VIRTUAL_ENV/module_loader.py
 
-SITE_PACKAGES=lib/python3.10/site-packages/
-
 cp -v $MODULE_LOADER_SOURCE $MODULE_LOADER
 
 # Wait for scanner
 sleep 0.5
 
-pip_install="pip install -r requirements.txt ${PIP_OPTIONS}"
+pip_install="pip install -r requirements.txt ${PIPCANARY_PIP_OPTIONS}"
 
-echo "Starting: $pip_install..."
+echo "Running: $pip_install..."
 
 # Installing packages with network
 strace -f -e trace=file \
@@ -58,7 +56,7 @@ bwrap \
   --setenv HOME "/root" \
   --setenv PATH "$VIRTUAL_ENV/bin:/usr/bin" \
   --chdir $VIRTUAL_ENV \
-  sh -c "$pip_install"
+  bash -c "$pip_install"
 
 # Loading modules without network and further file access restrictions
 strace -f -e trace=file \
@@ -78,11 +76,11 @@ bwrap \
   --setenv HOME "/root" \
   --setenv PATH "$VIRTUAL_ENV/bin:/usr/bin" \
   --chdir $VIRTUAL_ENV \
-  sh -c "python $MODULE_LOADER && pip list --format=json > packages.json"
+  bash -c "python $MODULE_LOADER && pip list --format=json > packages.json"
 
 if [ -z "${PIPCANARY_VIRTUAL_ENV+x}" ]; then
   echo "Removing $VIRTUAL_ENV..."
   rm -r $VIRTUAL_ENV
 fi
 
-echo "Done."
+echo "Scan finished."

@@ -1,0 +1,146 @@
+{
+    "info": {
+        "author": null,
+        "author_email": "Georg Brandl <georg@python.org>",
+        "bugtrack_url": null,
+        "classifiers": [
+            "Development Status :: 6 - Mature",
+            "Intended Audience :: Developers",
+            "Intended Audience :: End Users/Desktop",
+            "Intended Audience :: System Administrators",
+            "License :: OSI Approved :: BSD License",
+            "Operating System :: OS Independent",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
+            "Programming Language :: Python :: 3.13",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: Implementation :: CPython",
+            "Programming Language :: Python :: Implementation :: PyPy",
+            "Topic :: Text Processing :: Filters",
+            "Topic :: Utilities"
+        ],
+        "description": "Pygments\n~~~~~~~~\n\nPygments is a syntax highlighting package written in Python.\n\nIt is a generic syntax highlighter suitable for use in code hosting, forums,\nwikis or other applications that need to prettify source code.  Highlights\nare:\n\n* a wide range of over 500 languages and other text formats is supported\n* special attention is paid to details, increasing quality by a fair amount\n* support for new languages and formats are added easily\n* a number of output formats, presently HTML, LaTeX, RTF, SVG, all image\n  formats that PIL supports and ANSI sequences\n* it is usable as a command-line tool and as a library\n\nCopyright 2006-2025 by the Pygments team, see ``AUTHORS``.\nLicensed under the BSD, see ``LICENSE`` for details.\n",
+        "description_content_type": "text/x-rst",
+        "docs_url": null,
+        "download_url": null,
+        "downloads": {
+            "last_day": -1,
+            "last_month": -1,
+            "last_week": -1
+        },
+        "dynamic": null,
+        "home_page": null,
+        "keywords": "syntax highlighting",
+        "license": "BSD-2-Clause",
+        "license_expression": null,
+        "license_files": null,
+        "maintainer": "Matthäus G. Chajdas",
+        "maintainer_email": "Georg Brandl <georg@python.org>, Jean Abou Samra <jean@abou-samra.fr>",
+        "name": "Pygments",
+        "package_url": "https://pypi.org/project/Pygments/",
+        "platform": null,
+        "project_url": "https://pypi.org/project/Pygments/",
+        "project_urls": {
+            "Bug Tracker": "https://github.com/pygments/pygments/issues",
+            "Changelog": "https://github.com/pygments/pygments/blob/master/CHANGES",
+            "Documentation": "https://pygments.org/docs",
+            "Homepage": "https://pygments.org",
+            "Source": "https://github.com/pygments/pygments"
+        },
+        "provides_extra": [
+            "plugins",
+            "windows-terminal"
+        ],
+        "release_url": "https://pypi.org/project/Pygments/2.19.0/",
+        "requires_dist": [
+            "colorama>=0.4.6; extra == \"windows-terminal\""
+        ],
+        "requires_python": ">=3.8",
+        "summary": "Pygments is a syntax highlighting package written in Python.",
+        "version": "2.19.0",
+        "yanked": false,
+        "yanked_reason": null
+    },
+    "last_serial": 35590019,
+    "ownership": {
+        "organization": null,
+        "roles": [
+            {
+                "role": "Owner",
+                "user": "Anteru"
+            },
+            {
+                "role": "Owner",
+                "user": "gbrandl"
+            },
+            {
+                "role": "Owner",
+                "user": "mitsuhiko"
+            }
+        ]
+    },
+    "urls": [
+        {
+            "comment_text": "",
+            "digests": {
+                "blake2b_256": "20dcfde3e7ac4d279a331676829af4afafd113b34272393d73f610e8f0329221",
+                "md5": "6902f6f5ea74b0fd199641bde724c335",
+                "sha256": "4755e6e64d22161d5b61432c0600c923c5927214e7c956e31c23923c89251a9b"
+            },
+            "downloads": -1,
+            "filename": "pygments-2.19.0-py3-none-any.whl",
+            "has_sig": false,
+            "md5_digest": "6902f6f5ea74b0fd199641bde724c335",
+            "packagetype": "bdist_wheel",
+            "python_version": "py3",
+            "requires_python": ">=3.8",
+            "size": 1225305,
+            "upload_time": "2025-01-05T14:11:12",
+            "upload_time_iso_8601": "2025-01-05T14:11:12.158477Z",
+            "url": "https://files.pythonhosted.org/packages/20/dc/fde3e7ac4d279a331676829af4afafd113b34272393d73f610e8f0329221/pygments-2.19.0-py3-none-any.whl",
+            "yanked": false,
+            "yanked_reason": null
+        },
+        {
+            "comment_text": "",
+            "digests": {
+                "blake2b_256": "d3c09c9832e5be227c40e1ce774d493065f83a91d6430baa7e372094e9683a45",
+                "md5": "f2970b2aeda8fa768f679eb8ed753c47",
+                "sha256": "afc4146269910d4bdfabcd27c24923137a74d562a23a320a41a55ad303e19783"
+            },
+            "downloads": -1,
+            "filename": "pygments-2.19.0.tar.gz",
+            "has_sig": false,
+            "md5_digest": "f2970b2aeda8fa768f679eb8ed753c47",
+            "packagetype": "sdist",
+            "python_version": "source",
+            "requires_python": ">=3.8",
+            "size": 4967733,
+            "upload_time": "2025-01-05T14:11:17",
+            "upload_time_iso_8601": "2025-01-05T14:11:17.285237Z",
+            "url": "https://files.pythonhosted.org/packages/d3/c0/9c9832e5be227c40e1ce774d493065f83a91d6430baa7e372094e9683a45/pygments-2.19.0.tar.gz",
+            "yanked": false,
+            "yanked_reason": null
+        }
+    ],
+    "vulnerabilities": [
+        {
+            "aliases": [
+                "CVE-2026-4539"
+            ],
+            "details": "A security flaw has been discovered in pygments before 2.20.0. The impacted element is the function AdlLexer of the file pygments/lexers/archetype.py. The manipulation results in inefficient regular expression complexity. The attack is only possible with local access. The exploit has been released to the public and may be used for attacks. The project was informed of the problem early through an issue report but has not responded yet.",
+            "fixed_in": [
+                "2.20.0"
+            ],
+            "id": "GHSA-5239-wwwm-4pmq",
+            "link": "https://osv.dev/vulnerability/GHSA-5239-wwwm-4pmq",
+            "source": "osv",
+            "summary": null,
+            "withdrawn": null
+        }
+    ]
+}

@@ -12,6 +12,15 @@ ruff~=0.15.7
 Pyright~=1.1.408
 pip-audit~=2.10.0
 
-#Testing
+# Testing
 pytest~=9.0.2
 tox~=4.50.3
+bandit~=1.9.4
+pip>=26.0.1
+
+# Security
+build<=1.4.2
+filelock<=3.25.2
+packaging<=26.0
+virtualenv<=21.2.0
+rich<=14.3.3

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REQUIREMENTS_FILE=${REQUIREMENTS_FILE:-requirements.txt}
+REQUIREMENTS_FILE=${PIPCANARY_REQUIREMENTS_FILE:-requirements.txt}
 PYTHON3=`which python`
 
 PYTHON_BIN="$(dirname $PYTHON3)"
@@ -54,4 +54,4 @@ if [ -z "${PIPCANARY_VIRTUAL_ENV+x}" ]; then
   rm -r $VIRTUAL_ENV
 fi
 
-echo "Done."
+echo "Scan finished."

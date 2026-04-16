@@ -38,4 +38,4 @@ COPY requirements.txt requirements.txt
 #---------------------------------------------
 # Run scans
 #
-CMD ["sh", "-c", "pipcanary -r requirements.txt && pip-audit -r requirements.txt"]
+CMD ["sh", "-c", "pipcanary -r requirements.txt"]

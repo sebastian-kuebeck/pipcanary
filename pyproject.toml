@@ -1,6 +1,6 @@
 [project]
 name = "pipcanary"
-version = "0.0.7"
+version = "0.0.8"
 authors = [
   { name="Sebastian Kuebeck", email="sebastian.kuebeck@encab.io" },
 ]
@@ -9,6 +9,7 @@ description = "Supply Chain Attack prevention tool"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -24,6 +25,8 @@ dependencies = [
   "tomli==2.4.1",
   "platformdirs<=4.9.4",
   "python-discovery<=1.2.1",
+  "filelock<=3.25.2",
+  "pip>=26.0.1"
 ]
 
 [project.urls]

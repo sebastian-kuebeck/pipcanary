@@ -19,6 +19,7 @@ format:
 validate:
 	pyright src tests
 	ruff check src tests
+	bandit -q -r src tests --severity-level medium
 
 audit:
 	pip-audit -r requirements.txt

@@ -23,5 +23,5 @@ END
 set +e
 
 export PYTHONPATH=./src
-python -m pipcanary -r $REQUIREMENTS_FILE 
+python -m pipcanary -r $REQUIREMENTS_FILE -i http://localhost:3141/root/pypi/+simple/
 rc=$?

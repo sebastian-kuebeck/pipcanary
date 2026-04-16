@@ -23,5 +23,5 @@ END
 set +e
 
 export PYTHONPATH=./src
-python -m pipcanary -r $REQUIREMENTS_FILE 
+python -m pipcanary -r $REQUIREMENTS_FILE --no-sandbox
 rc=$?

@@ -15,7 +15,7 @@ class PackageDownloadError(Exception):
         self.parent = parent
 
 
-class UploadVerificationFailedError(Exception):
+class AuditFailedError(Exception):
     pass
 
 
