@@ -1,5 +1,9 @@
 # Changes
 
+## 0.0.9 (2026-04-26)
+
+- Changed output to logging
+
 ## 0.0.8 (2026-04-16)
 
 - Added known vulnerability checks

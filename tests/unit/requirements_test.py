@@ -33,7 +33,9 @@ class RequirementsTest(unittest.TestCase):
 
     def test_skip_packages(self):
         requirements = Requirements.from_requirements_file(self.requirements_file)
-        requirements.skip_packages(["botocore", "numpy", "charset-normalizer"])
+        reduced_requirements = requirements.skip_packages(
+            ["botocore", "numpy", "charset-normalizer"]
+        )
         expected = [
             "boto3<=1.42.81",
             "click<=8.3.1",
@@ -42,12 +44,14 @@ class RequirementsTest(unittest.TestCase):
             "flask",
             "pyyaml",
         ]
-        self.assertEqual(expected, requirements.requirements)
+        self.assertEqual(expected, reduced_requirements.requirements)
 
     def test_write_to_temporary_file(self):
         requirements = Requirements.from_requirements_file(self.requirements_file)
-        requirements.skip_packages(["botocore", "numpy", "charset-normalizer"])
-        temp_file = requirements.write_to_temporary_file()
+        requirements_reduced = requirements.skip_packages(
+            ["botocore", "numpy", "charset-normalizer"]
+        )
+        temp_file = requirements_reduced.write_to_temporary_file()
         try:
             requirements_loaded = Requirements.from_requirements_file(temp_file)
         finally:

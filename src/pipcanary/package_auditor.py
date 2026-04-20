@@ -1,6 +1,7 @@
+import logging
 import json
 
-from typing import Dict, Any, Optional, List, Union, Set, Iterable
+from typing import Dict, Any, Optional, List, Union, Iterable
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timedelta
@@ -9,14 +10,16 @@ from shlex import quote
 
 from .errors import InvalidArgumentError, PackageDownloadError
 
+logger = logging.getLogger(__name__)
 
-class Version:
+
+class PackageVersion:
     def __init__(self, name: str, version: str) -> None:
         self.name = name
         self.version = version
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "Version":
+    def from_json(cls, data: Dict[str, Any]) -> "PackageVersion":
         return cls(
             data["name"],
             data["version"],
@@ -39,39 +42,6 @@ class Upload:
         return cls(version, datetime.fromisoformat(upload_time), yanked)
 
 
-class Vulnerability:
-    def __init__(
-        self,
-        id: str,
-        aliases: List[str],
-        summary: Optional[str],
-        description: Optional[str],
-        link: Optional[str],
-        published: Optional[datetime],
-        fixed: List[str],
-    ) -> None:
-        self.id = id
-        self.aliases = aliases
-        self.summary = summary
-        self.description = description
-        self.link = link
-        self.published = published
-        self.fixed = fixed
-
-    @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "Vulnerability":
-        published = data.get("published")
-        return cls(
-            data["id"],
-            data.get("aliases", []),
-            data.get("summary"),
-            data.get("description"),
-            data.get("link"),
-            datetime.fromisoformat(published) if published else None,
-            data.get("fixed", []),
-        )
-
-
 class VulnerabilityId:
     def __init__(self, value) -> None:
         self.value = value
@@ -89,37 +59,95 @@ class VulnerabilityId:
         return self.value
 
 
+class Vulnerability:
+    def __init__(
+        self,
+        id: str,
+        aliases: List[str],
+        summary: Optional[str],
+        description: Optional[str],
+        link: Optional[str],
+        published: Optional[datetime],
+        fixed_versions: List[str],
+    ) -> None:
+        self.id = VulnerabilityId(id)
+        self.aliases = set([VulnerabilityId(a) for a in aliases])
+        self.summary = summary
+        self.description = description
+        self.link = link
+        self.published = published
+        self.fixed_versions = fixed_versions
+
+    @classmethod
+    def from_json(cls, data: Dict[str, Any]) -> "Vulnerability":
+        published = data.get("published")
+        return cls(
+            data["id"],
+            data.get("aliases", []),
+            data.get("summary"),
+            data.get("description"),
+            data.get("link"),
+            datetime.fromisoformat(published) if published else None,
+            data.get("fixed_in", []),
+        )
+
+    def __str__(self) -> str:
+        if not self.fixed_versions:
+            return str(self.id)
+
+        return "%s (%s)" % (
+            str(self.id),
+            "fixed in %s" % ", ".join(self.fixed_versions),
+        )
+
+    def __contains__(self, ids):
+        if not hasattr(ids, "__iter__"):
+            return False
+
+        if self.id in ids:
+            return True
+
+        if self.aliases.intersection(ids):
+            return True
+
+        return False
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Vulnerability):
+            return False
+        return self.id == value.id
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+
 class VersionInfo:
-    def __init__(self, version: Version, vulnerabilities: List[Vulnerability]) -> None:
-        self.version = version
-        self.vulnerabilities = vulnerabilities
-        self._vulnerability_ids: Set[VulnerabilityId] = set()
+    def __init__(
+        self, package_version: PackageVersion, vulnerabilities: List[Vulnerability]
+    ) -> None:
+        self.version = package_version
+        self._vulnerabilities = vulnerabilities
 
-        for vuln in vulnerabilities:
-            self._vulnerability_ids.add(VulnerabilityId(vuln.id))
-
-    def vulnerability_ids(
+    def vulnerabilities(
         self, ignored_ids: Optional[Iterable[str]] = None
-    ) -> List[str]:
-        if ignored_ids:
-            ids = self._vulnerability_ids.difference(
-                [VulnerabilityId(id) for id in ignored_ids]
-            )
+    ) -> Iterable[Vulnerability]:
+        if not ignored_ids:
+            yield from self._vulnerabilities
         else:
-            ids = self._vulnerability_ids
-
-        return [str(id) for id in ids]
+            for vuln in self._vulnerabilities:
+                if ignored_ids not in vuln:
+                    yield vuln
 
     @property
     def has_vulnerabilities(self):
-        return len(self._vulnerability_ids) > 0
+        return len(self._vulnerabilities) > 0
 
     @classmethod
     def from_json(cls, data: Dict[str, Any]) -> "VersionInfo":
         info = data["info"]
         vulnerabilities = data["vulnerabilities"]
         return cls(
-            Version.from_json(info),
+            PackageVersion.from_json(info),
             [
                 Vulnerability.from_json(v)
                 for v in vulnerabilities
@@ -189,25 +217,31 @@ class PackageSource(ABC):
         pass
 
     @abstractmethod
-    def download_version_info(self, version: Version) -> Optional[VersionInfo]:
+    def download_version_info(
+        self, package_version: PackageVersion
+    ) -> Optional[VersionInfo]:
         pass
 
 
 class PipOptions:
-    DEFAULT_INDEX_URL = "https://pypi.org/pypi/"
+    PYPI_INDEX_URL = "https://pypi.org/pypi/"
 
     def __init__(
         self, index_url: Optional[str] = None, extra_index_url: Optional[str] = None
     ) -> None:
+        self.default_index_url = self.PYPI_INDEX_URL
         self._index_url = index_url
         self._extra_index_url = extra_index_url
 
-    @property
-    def metadata_index_url(self) -> str:
-        url = self.DEFAULT_INDEX_URL
+    @staticmethod
+    def _normalize_url(url: str) -> str:
         if not url.endswith("/"):
             url += "/"
         return url
+
+    @property
+    def index_url(self) -> Optional[str]:
+        return self._normalize_url(self._index_url) if self._index_url else None
 
     def pip_environment(self) -> Dict[str, str]:
         env = {}
@@ -230,30 +264,58 @@ class PipOptions:
 class PypiPackageSource(PackageSource):
     def __init__(self, options: PipOptions) -> None:
         self.options = options
+        self._index_url = options.index_url
 
     def download(self, url: str, package_name) -> Optional[Dict[str, Any]]:
         try:
-            response = urlopen(url) #nosec
+            logging.debug(
+                f"Downloading package metadata for package {package_name} from {url}..."
+            )
+            response = urlopen(url)  # nosec
             return json.load(response)
         except HTTPError as e:
             if e.code == 404:
-                print("GET %s returned NOT FOUND!" % url)
+                logger.debug(f"Package {package_name} metadata not found at {url}.")
                 return None
             else:
                 raise PackageDownloadError(package_name, str(e), e)
         except URLError as e:
             raise PackageDownloadError(package_name, str(e), e)
 
+    def download_from_index(
+        self, path: str, package_name: str
+    ) -> Optional[Dict[str, Any]]:
+        if self._index_url:
+            try:
+                response = self.download(f"{self._index_url}{path}", package_name)
+                if response:
+                    return response
+                else:
+                    return self.download(
+                        f"{self.options.default_index_url}{path}", package_name
+                    )
+            except PackageDownloadError:
+                logging.warning(
+                    f"Failed to retrieve metadata from {self._index_url}. Falling back to {self.options.default_index_url}."
+                )
+                self._index_url = None
+        else:
+            return self.download(
+                f"{self.options.default_index_url}{path}", package_name
+            )
+
     def download_package_info(self, package_name: str) -> Optional[PackageInfo]:
-        package_info_data = self.download(
-            f"{self.options.metadata_index_url}{package_name}/json", package_name
+        package_info_data = self.download_from_index(
+            f"{package_name}/json", package_name
         )
         return PackageInfo.from_json(package_info_data) if package_info_data else None
 
-    def download_version_info(self, version: Version) -> Optional[VersionInfo]:
-        version_info_data = self.download(
-            f"{self.options.metadata_index_url}{version.name}/{version.version}/json",
-            str(version),
+    def download_version_info(
+        self, package_version: PackageVersion
+    ) -> Optional[VersionInfo]:
+        version_info_data = self.download_from_index(
+            f"{package_version.name}/{package_version.version}/json",
+            str(package_version),
         )
         return VersionInfo.from_json(version_info_data) if version_info_data else None
 
@@ -302,7 +364,7 @@ class PackageAuditObserver(ABC):
         pass
 
     @abstractmethod
-    def version_not_found(self, version: Version):
+    def version_not_found(self, version: PackageVersion):
         pass
 
     @abstractmethod
@@ -370,7 +432,7 @@ class AuditReport:
         self,
         vulnerable_versions: List[VersionInfo],
         too_recent_packages: List[Package],
-        ignored_vulns: List[str],
+        ignored_vulns: List[Vulnerability],
     ) -> None:
         self.vulnerable_versions = vulnerable_versions
         self.too_recent_packages = too_recent_packages
@@ -390,23 +452,23 @@ class PackageAuditor:
     ) -> AuditReport:
         vulnerable_versions: List[VersionInfo] = []
         too_recent_packages: List[Package] = []
-        ignored_vulns: List[str] = []
+        ignored_vulns: List[Vulnerability] = []
 
         for version_data in version_list:
-            version = Version.from_json(version_data)
-            info = self.source.download_version_info(version)
+            package_version = PackageVersion.from_json(version_data)
+            info = self.source.download_version_info(package_version)
             if not info:
-                self.observer.version_not_found(version)
+                self.observer.version_not_found(package_version)
                 continue
 
             if info.has_vulnerabilities:
-                vuln_ids = info.vulnerability_ids(selection.ignore_vulns)
-                if vuln_ids:
+                vulns = info.vulnerabilities(selection.ignore_vulns)
+                if vulns:
                     self.observer.version_is_vulnerable(info)
                     vulnerable_versions.append(info)
                     continue
                 else:
-                    ignored_vulns.extend(info.vulnerability_ids())
+                    ignored_vulns.extend(info.vulnerabilities())
 
             package = Package.from_json(version_data, self.source)
 

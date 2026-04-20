@@ -1,3 +1,16 @@
+from enum import IntEnum
+
+
+class ExitCodes(IntEnum):
+    OK = 0
+    MISSING_REQUIREMENT = -1
+    INVAID_ARGUMENT = 1
+    SCAN_FAILED = 2
+    PACKAGE_DOWNLOAD_FAILED = 3
+    AUDIT_FAILED = 4
+    SCAN_ALERT = 5
+
+
 class InvalidArgumentError(Exception):
     pass
 

@@ -1,10 +1,9 @@
-- enable auditing for no-scan packages
-- recognize aliases in --ignore-vuln
-- change Message: "Auditing the most recent package uploads.."
-- show fixed version in vulnerability.
-- run metadata download through custom index if possible
-- add quiet mode + change python output to logging
+- handle backslash in requirements
+- pass through PIP environment variables if possible
+- transfer pip config https://pip.pypa.io/en/stable/topics/configuration/
+- generate locked requirements file or pyproject.toml
 - add configuratiuon to pyproject.toml
 - generate json report
+- sarif output
 - add caching for already scanned packages.
 - improve documentation

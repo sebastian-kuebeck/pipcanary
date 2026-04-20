@@ -1,4 +1,3 @@
-import sys
 import re
 import io
 
@@ -87,12 +86,11 @@ class Finding:
         self.description = description
         self.explanation = explanation
 
-    def write(self, out: io.TextIOBase):
-        out.write(
-            f"Found suspicious access to {self.indication} in package {self.package}.\n\n"
-        )
-        out.write(f"Description: {self.description}\n")
-        out.write(f"Explanation: {self.explanation}\n")
+    def __str__(self) -> str:
+        message = f"""Found suspicious access to {self.indication} in package {self.package}.
+ - Description: {self.description}
+ - Explanation: {self.explanation}"""
+        return message
 
 
 class RuleSet(ABC):
@@ -244,6 +242,10 @@ class ScannerObserver(ABC):
     def match_detected(self, finding: Finding):
         pass
 
+    @abstractmethod
+    def warning_or_error(self, message: str):
+        pass
+
 
 class StraceScanner:
     def __init__(
@@ -260,7 +262,7 @@ class StraceScanner:
                 fp.write(line)
 
             if msg := self.rule_set.warnings_or_errors(line):
-                print(msg, file=sys.stderr)
+                self.observer.warning_or_error(msg)
 
             if resource := self.rule_set.identify_resource(line):
                 self.observer.resource_identified(resource)

@@ -12,7 +12,7 @@ from pipcanary.package_auditor import (
     PackageAuditObserver,
     AuditSelection,
     PipOptions,
-    Version,
+    PackageVersion,
     VersionInfo,
 )
 
@@ -39,9 +39,10 @@ class TestPackageSource(PackageSource):
             with open(path, "rb") as f:
                 return PackageInfo.from_json(json.load(f))
 
-    def download_version_info(self, version: Version) -> Optional[VersionInfo]:
-        version_id = str(version)
-        path = self.sample_version_info_pathes.get(version_id)
+    def download_version_info(
+        self, package_version: PackageVersion
+    ) -> Optional[VersionInfo]:
+        path = self.sample_version_info_pathes.get(str(package_version))
         if path:
             with open(path, "rb") as f:
                 return VersionInfo.from_json(json.load(f))
@@ -70,15 +71,17 @@ class TestPackageInfo(unittest.TestCase):
 class TestVersionInfo(unittest.TestCase):
     def setUp(self) -> None:
         self.source = TestPackageSource()
-        info = self.source.download_version_info(Version("pygments", "2.19.0"))
+        info = self.source.download_version_info(PackageVersion("pygments", "2.19.0"))
         assert info
         self.info = info
 
-    def test_vulnerability_ids(self):
-        self.assertEqual(["GHSA-5239-wwwm-4pmq"], self.info.vulnerability_ids())
+    def test_vulnerabilities(self):
+        vulns = list(self.info.vulnerabilities())
+        self.assertEqual(1, len(vulns))
+        self.assertEqual("GHSA-5239-wwwm-4pmq", vulns[0].id)
 
-    def test_vulnerability_ids_ignored(self):
-        self.assertEqual([], self.info.vulnerability_ids(["GHSA-5239-wwwm-4pmq"]))
+    def test_vulnerabilities_ignored(self):
+        self.assertEqual([], list(self.info.vulnerabilities(["GHSA-5239-wwwm-4pmq"])))
 
 
 class TestPackage(unittest.TestCase):
@@ -137,14 +140,14 @@ class TestPackageCheckObserver(PackageAuditObserver):
 
     def __init__(self) -> None:
         self.vulnerable: List[VersionInfo] = []
-        self.versions_not_found: List[Version] = []
+        self.versions_not_found: List[PackageVersion] = []
         self.not_found: List[Package] = []
         self.too_recently: List[Package] = []
 
     def version_is_vulnerable(self, info: VersionInfo):
         self.vulnerable.append(info)
 
-    def version_not_found(self, version: Version):
+    def version_not_found(self, version: PackageVersion):
         self.versions_not_found.append(version)
 
     def package_not_found(self, package: Package):

@@ -1,4 +1,3 @@
-import sys
 import os
 import subprocess
 import signal
@@ -7,13 +6,17 @@ import json
 import shutil
 import time
 import argparse
+import logging
 
 from subprocess import CalledProcessError
 from typing import List, Dict, Any, Optional
 from argparse import ArgumentParser
 from datetime import datetime
 
+from .logging import set_up_logging, LOG_LEVELS
+
 from .errors import (
+    ExitCodes,
     InvalidArgumentError,
     ScanFailedError,
     AuditFailedError,
@@ -37,7 +40,7 @@ from .package_auditor import (
     PypiPackageSource,
     PackageAuditObserver,
     Package,
-    Version,
+    PackageVersion,
     VersionInfo,
     AuditSelection,
     AuditReport,
@@ -50,73 +53,73 @@ class SuspiciousAccessDetected(Exception):
         self.finding = finding
 
 
+logger = logging.getLogger(__name__)
+
+
 class AlertingScannerObserver(ScannerObserver):
 
     def resource_identified(self, resource: str):
-        print("Scanning package activity: %s..." % resource)
+        logger.info("Scanning package activity: %s..." % resource)
 
     def match_detected(self, finding: Finding):
         raise SuspiciousAccessDetected(finding)
 
+    def warning_or_error(self, message: str):
+        logger.error(message)
 
-class PrintingPackageAuditObserver(PackageAuditObserver):
+
+class LoggingPackageAuditObserver(PackageAuditObserver):
     def __init__(self, source: PackageSource, selection: AuditSelection) -> None:
         self._source = source
         self._selection = selection
 
     def version_is_vulnerable(self, info: VersionInfo):
-        remaining_vulns = info.vulnerability_ids(self._selection.ignore_vulns)
-        vulns_ignored = len(info.vulnerability_ids()) - len(remaining_vulns)
-        remaining_vulns_listed = ", ".join(remaining_vulns)
+        remaining_vulns = list(info.vulnerabilities(self._selection.ignore_vulns))
+        vulns_ignored = len(list(info.vulnerabilities())) - len(remaining_vulns)
+        remaining_vulns_listed = ", ".join([str(v) for v in remaining_vulns])
 
         if vulns_ignored:
-            print(
+            logger.error(
                 f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}. {vulns_ignored} vulnerabilities ignored."
             )
         else:
-            print(
+            logger.error(
                 f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}."
             )
 
-    def version_not_found(self, version: Version):
-        print(f"Package {str(version)} not found on pypi")
+    def version_not_found(self, version: PackageVersion):
+        logger.warning(f"Package {str(version)} not found on pypi")
 
     def package_not_found(self, package: Package):
-        print(f"Package {package.name} not found on pypi")
+        logger.warning(f"Package {package.name} not found on pypi")
 
     def package_upload_too_recently(
         self, package: Package, upload_time: datetime, latest_upload_time: datetime
     ):
-        print(
-            f"""Package {package.name} {package.version} was updated too recently: {upload_time.isoformat()}."""
-        )
+        message = f"Package {package.name} {package.version} was updated too recently: {upload_time.isoformat()}.\n"
         upload = package.latest_possible_upload(latest_upload_time)
         if upload:
             info = self._source.download_version_info(
-                Version(package.name, upload.version)
+                PackageVersion(package.name, upload.version)
             )
 
             if not info:
-                print(
-                    f"\nThere is no security information on PyPi about the next suitable release {package.name}: {upload.version}"
-                )
+                message += f"  - There is no security information on PyPi about the next suitable release {package.name}: {upload.version}\n"
             elif info.has_vulnerabilities:
-                vulns = ", ".join(info.vulnerability_ids())
-                print(
-                    f"\nThe next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulns}"
-                )
+                vulns = ", ".join([str(v) for v in info.vulnerabilities()])
+                message += f"  - The next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulns}\n"
             else:
-                print(
-                    f"\nConsider {package.name}<={upload.version} which has no known vulnerabilities."
-                )
+                message += f"  - Consider {package.name}<={upload.version} which has no known vulnerabilities\n"
 
-            print(
-                f"""\nIf you are certain that the latest upload is secure, add the following argument...
-    --allow-upload-time='{package.name}<={upload_time.isoformat()}'
-"""
+            message += (
+                "  - If you are certain that the latest upload is secure, add the following argument: "
+                f"--allow-upload-time='{package.name}<={upload_time.isoformat()}'"
             )
+
         else:
-            print("No suitable version uploaded yet.")
+            message += " - No suitable version uploaded yet."
+
+        logger.warning(message)
 
 
 SCAN_SCRIPT_SANDBOXED = os.path.join(os.path.dirname(__file__), "sbpip_scan.sh")
@@ -207,6 +210,12 @@ parser.add_argument(
     help=("Ignore the given vulnerability"),
 )
 
+parser.add_argument(
+    "--log-level",
+    help=("The log level. Supported levels are: %s" % (", ".join(LOG_LEVELS))),
+    default="INFO",
+)
+
 
 def scan_packages(
     requirements: Requirements,
@@ -242,9 +251,23 @@ def scan_packages(
             observer,
             trace_file,
         )
+        logging.info(
+            "Scanning packages for %d requirements..."
+            % (len(requirements.requirements))
+        )
 
-        process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True, env=env)
-
+        if logger.isEnabledFor(logging.DEBUG):
+            process = subprocess.Popen(
+                command, stderr=subprocess.PIPE, text=True, env=env
+            )
+        else:
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+            )
         assert process.stderr
 
         scanner.scan(process.stderr)
@@ -282,20 +305,21 @@ def scan_packages(
 def audit_packages(
     package_list: List[Dict[str, Any]], selection: AuditSelection, options: PipOptions
 ) -> AuditReport:
-    print("Auditing the most recent package uploads...\n")
+    logging.info("Auditing %d packages..." % len(package_list))
     source = PypiPackageSource(options)
-    packages = PackageAuditor(source, PrintingPackageAuditObserver(source, selection))
+    packages = PackageAuditor(source, LoggingPackageAuditObserver(source, selection))
     report = packages.audit(selection, package_list)
 
     message = ""
 
     if report.vulnerable_versions:
-        message += "\nVulnerabilities in the following package(s) were found: %s." % (
-            ", ".join([str(v.version) for v in report.vulnerable_versions])
+        message += (
+            "  - Vulnerabilities in the following package(s) were found: %s.\n"
+            % (", ".join([str(v.version) for v in report.vulnerable_versions]))
         )
 
     if report.too_recent_packages:
-        message += "\nThe following package(s) were uploaded too recently: %s." % (
+        message += "  - The following package(s) were uploaded too recently: %s.\n" % (
             ", ".join([p.name for p in report.too_recent_packages])
         )
 
@@ -309,20 +333,28 @@ def check_command(command: str, test_command: List[str]):
     try:
         subprocess.check_call(test_command)
     except CalledProcessError:
-        print("Required command %s not found!" % command)
-        exit(-1)
+        logger.error("Required command %s not found!" % command)
+        exit(ExitCodes.MISSING_REQUIREMENT)
 
 
 def check_package(package: str, test_command: List[str]):
     try:
         subprocess.check_call(test_command)
     except CalledProcessError:
-        print("Required python package %s not found!" % package)
-        exit(-1)
+        logger.error("Required python package %s not found!" % package)
+        exit(ExitCodes.MISSING_REQUIREMENT)
 
 
 def pipcanary():
     args = parser.parse_args()
+
+    if args.log_level == "DEBUG":
+        log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    else:
+        log_format = "%(message)s"
+
+    set_up_logging(log_format, args.log_level)
+
     check_package("venv", ["sh", "-c", "python3 -m venv --help 1>/dev/null"])
     check_command("strace", ["sh", "-c", "strace -V 1>/dev/null"])
 
@@ -338,19 +370,17 @@ def pipcanary():
         if not requirement_file and not project_file:
             if os.path.exists("pyproject.toml"):
                 project_file = "pyproject.toml"
-                print("Using ./pyproject.toml")
+                logger.info("Using ./pyproject.toml")
             elif os.path.exists("requirements.txt"):
                 requirement_file = "requirements.txt"
-                print("Using ./requirements.txt")
+                logger.info("Using ./requirements.txt")
 
         if project_file:
             requirements = Requirements.from_project_file(project_file)
         else:
             requirements = Requirements.from_requirements_file(requirement_file)
 
-        do_not_scan = args.do_not_scan
-        if do_not_scan:
-            requirements.skip_packages(do_not_scan)
+        requirements_to_audit = requirements.skip_packages(args.do_not_scan or [])
 
         trace_file = args.trace_file
         selection = AuditSelection(
@@ -371,43 +401,46 @@ def pipcanary():
             )
 
         packages = scan_packages(
-            requirements, additional_directory, trace_file, sandbox, pip_options
+            requirements_to_audit,
+            additional_directory,
+            trace_file,
+            sandbox,
+            pip_options,
         )
         report = audit_packages(packages, selection, pip_options)
 
         if not report.ignored_vulns:
-            print("All packages appear to be safe!")
+            logger.info("All packages appear to be safe!")
         else:
-            print("%d vulnerabilities ignored." % len(report.ignored_vulns))
+            logger.info("%d vulnerabilities ignored." % len(report.ignored_vulns))
     except (InvalidArgumentError, RequirementsError) as e:
-        print(str(e), file=sys.stderr)
-        exit(1)
+        logger.error(str(e))
+        exit(ExitCodes.INVAID_ARGUMENT)
     except ScanFailedError as e:
-        print(str(e), file=sys.stderr)
-        exit(2)
+        logger.error(str(e))
+        exit(ExitCodes.SCAN_FAILED)
     except PackageDownloadError as e:
-        print(
+        logger.error(
             "Failed to download package information for %s: %s"
-            % (e.package_name, str(e)),
-            file=sys.stderr,
+            % (e.package_name, str(e))
         )
         exit(3)
     except AuditFailedError as e:
-        print(str(e), file=sys.stderr)
-        exit(4)
+        logger.error("Summary:\n" + str(e))
+        exit(ExitCodes.AUDIT_FAILED)
     except SuspiciousAccessDetected as e:
-        print(file=sys.stderr)
-        e.finding.write(sys.stderr)  # type: ignore
-        disclaimer = """
+        message = f"""
+{str(e.finding)}
+        
 This could be dangerous!!!
 Don't install this package under any circumstances until you know for sure that this is a false positive!
 In doubt, contact the package maintainers!
 """
-        print(disclaimer, file=sys.stderr)
-        exit(5)
+        logger.fatal(message)
+        exit(ExitCodes.SCAN_ALERT)
 
     except KeyboardInterrupt:
-        print("PipCanary was interrupted.")
+        logger.info("PipCanary was interrupted.")
 
 
 if __name__ == "__main__":

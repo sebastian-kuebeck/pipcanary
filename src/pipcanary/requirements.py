@@ -9,7 +9,7 @@ from .errors import RequirementsError
 
 
 class Requirements:
-    PYPI_REQUIREMENT = re.compile(r"^([a-zA-Z][a-zA-Z0-9-_]*)([=><!\^\~\[\(@]|\w).*")
+    PYPI_REQUIREMENT = re.compile(r"^([a-zA-Z][a-zA-Z0-9-_]*)([=><!\^\~\[\(@]|\s).*")
 
     def __init__(self, requirements: List[str]) -> None:
         self.requirements = requirements
@@ -39,19 +39,19 @@ class Requirements:
         except IOError as e:
             raise RequirementsError(f"Failed to load project file: {path}: {str(e)}")
 
-    def skip_packages(self, packages: List[str]):
+    def skip_packages(self, requirements_or_packages: List[str]) -> "Requirements":
         reduced_rquirements: List[str] = []
         for requirement in self.requirements:
             match = self.PYPI_REQUIREMENT.match(requirement)
             if match:
                 package = match.groups()[0]
-                if package in packages:
-                    pass
-                elif requirement in packages:
-                    pass
-                else:
+                if package not in requirements_or_packages:
                     reduced_rquirements.append(requirement)
-        self.requirements = reduced_rquirements
+            else:
+                if requirement not in requirements_or_packages:
+                    reduced_rquirements.append(requirement)
+
+        return Requirements(reduced_rquirements)
 
     def write_to_temporary_file(self) -> str:
         fp: Optional[int] = None

@@ -22,7 +22,8 @@ validate:
 	bandit -q -r src tests --severity-level medium
 
 audit:
-	pip-audit -r requirements.txt
+	python -m pipcanary -r requirements.txt
+	python -m pipcanary -p pyproject.toml
 
 test:
 	python -m unittest discover -v -s tests/unit -p '*_test.py'
