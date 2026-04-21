@@ -16,16 +16,35 @@ class Requirements:
 
     @classmethod
     def from_requirements_file(cls, path: str):
-        requirements = []
         try:
             with open(path, "r") as input:
-                for line in input.readlines():
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        requirements.append(line)
-            return cls(requirements)
+                return cls(cls.parse_requirements(input.readlines()))
         except IOError as e:
             raise RequirementsError(f"Failed to load project file: {path}: {str(e)}")
+
+    @classmethod
+    def parse_requirements(cls, lines: List[str]) -> List[str]:
+        requirements = []
+        multiline_requirement: str = ""
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            if line.endswith("\\"):
+                multiline_requirement += line[:-1]
+                continue
+
+            if multiline_requirement:
+                requrement = multiline_requirement + line
+                multiline_requirement = ""
+            else:
+                requrement = line
+
+            requirements.append(requrement)
+        if multiline_requirement:
+            requirements.append(multiline_requirement)
+        return requirements
 
     @classmethod
     def from_project_file(cls, path: str):

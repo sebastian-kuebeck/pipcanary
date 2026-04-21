@@ -76,12 +76,15 @@ class TestVersionInfo(unittest.TestCase):
         self.info = info
 
     def test_vulnerabilities(self):
-        vulns = list(self.info.vulnerabilities())
+        vulns = self.info.vulnerabilities()
         self.assertEqual(1, len(vulns))
         self.assertEqual("GHSA-5239-wwwm-4pmq", vulns[0].id)
 
     def test_vulnerabilities_ignored(self):
-        self.assertEqual([], list(self.info.vulnerabilities(["GHSA-5239-wwwm-4pmq"])))
+        self.assertEqual([], self.info.vulnerabilities(["GHSA-5239-wwwm-4pmq"]))
+
+    def test_aliases_ignored(self):
+        self.assertEqual([], self.info.vulnerabilities(["CVE-2026-4539"]))
 
 
 class TestPackage(unittest.TestCase):
@@ -217,25 +220,27 @@ class TestPackageAuditor(unittest.TestCase):
 
 
 class TestPipOptions(unittest.TestCase):
-    def test_encode_to_shell(self):
-        options = PipOptions(
-            "http://localhost:3141/root/pypi/+simple/",
-            "http://localhost:3141/root/pypi/+test/",
+    def setUp(self):
+        self.options = PipOptions(
+            index_url="http://localhost:3141/root/pypi/+simple/",
+            extra_index_url="http://localhost:3141/root/pypi/+test/",
         )
+
+    def test_encode_to_shell(self):
         self.assertEqual(
             "--index-url http://localhost:3141/root/pypi/+simple/ --extra-index-url http://localhost:3141/root/pypi/+test/",
-            options.encode_for_shell(),
+            self.options.encode_for_shell(),
         )
 
     def test_pip_environment(self):
-        options = PipOptions(
-            "http://localhost:3141/root/pypi/+simple/",
-            "http://localhost:3141/root/pypi/+test/",
+        self.options = PipOptions(
+            index_url="http://localhost:3141/root/pypi/+simple/",
+            extra_index_url="http://localhost:3141/root/pypi/+test/",
         )
         self.assertEqual(
             {
                 "PIP_INDEX_URL": "http://localhost:3141/root/pypi/+simple/",
                 "PIP_EXTRA_INDEX_URL": "http://localhost:3141/root/pypi/+test/",
             },
-            options.pip_environment(),
+            self.options.pip_environment(),
         )

@@ -1,4 +1,3 @@
-- handle backslash in requirements
 - pass through PIP environment variables if possible
 - transfer pip config https://pip.pypa.io/en/stable/topics/configuration/
 - generate locked requirements file or pyproject.toml

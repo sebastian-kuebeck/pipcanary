@@ -73,19 +73,14 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
         self._source = source
         self._selection = selection
 
-    def version_is_vulnerable(self, info: VersionInfo):
-        remaining_vulns = list(info.vulnerabilities(self._selection.ignore_vulns))
-        vulns_ignored = len(list(info.vulnerabilities())) - len(remaining_vulns)
-        remaining_vulns_listed = ", ".join([str(v) for v in remaining_vulns])
+    @staticmethod
+    def aliterate(vs: List[Any]):
+        return ", ".join([str(v) for v in vs])
 
-        if vulns_ignored:
-            logger.error(
-                f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}. {vulns_ignored} vulnerabilities ignored."
-            )
-        else:
-            logger.error(
-                f"Package {str(info.version)} has known vulnerabilities: {remaining_vulns_listed}."
-            )
+    def version_is_vulnerable(self, info: VersionInfo):
+        logger.error(
+            f"Package {str(info.version)} has known vulnerabilities: {self.aliterate(info.vulnerabilities())}."
+        )
 
     def version_not_found(self, version: PackageVersion):
         logger.warning(f"Package {str(version)} not found on pypi")
@@ -106,7 +101,7 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
             if not info:
                 message += f"  - There is no security information on PyPi about the next suitable release {package.name}: {upload.version}\n"
             elif info.has_vulnerabilities:
-                vulns = ", ".join([str(v) for v in info.vulnerabilities()])
+                vulns = self.aliterate(info.vulnerabilities())
                 message += f"  - The next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulns}\n"
             else:
                 message += f"  - Consider {package.name}<={upload.version} which has no known vulnerabilities\n"
@@ -125,10 +120,14 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
 SCAN_SCRIPT_SANDBOXED = os.path.join(os.path.dirname(__file__), "sbpip_scan.sh")
 SCAN_SCRIPT = os.path.join(os.path.dirname(__file__), "spip_scan.sh")
 
+VERSION = "0.0.10"
+
 parser = ArgumentParser(
-    prog="PipCanary", description="Detects supply chain attacks in python dependencies"
+    prog="pipcanary",
+    description=f"PipCanary {VERSION} detects supply chain attacks and known vulnerabilities in python dependencies",
 )
 
+parser.add_argument("--version", action="version", version=VERSION)
 parser.add_argument(
     "-r", "--requirement", help=("The requirements file, usually requirements.txt.")
 )
@@ -216,13 +215,17 @@ parser.add_argument(
     default="INFO",
 )
 
+parser.add_argument(
+    "--temporary-directory",
+    help=("Temporary directory. Default: /tmp"),
+)
+
 
 def scan_packages(
     requirements: Requirements,
-    additional_directory: Optional[str],
-    trace_file: Optional[str],
     sandbox: bool,
     pip_options: PipOptions,
+    trace_file: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     home_directory = os.environ["HOME"]
 
@@ -231,6 +234,7 @@ def scan_packages(
 
     env = {**dict(os.environ), "PIPCANARY_PIP_OPTIONS": pip_options.encode_for_shell()}
 
+    additional_directory = pip_options.additional_directory
     if additional_directory:
         env["PIPCANARY_ADDITIONAL_DIRECTORY"] = os.path.abspath(additional_directory)
 
@@ -239,7 +243,13 @@ def scan_packages(
     requirements_file = requirements.write_to_temporary_file()
     env["PIPCANARY_REQUIREMENTS_FILE"] = requirements_file
 
-    venv_directory = tempfile.mkdtemp(suffix="-pipcanary")
+    temporary_directory = pip_options.temporary_directory
+    if temporary_directory and not os.path.isdir(temporary_directory):
+        raise InvalidArgumentError(
+            f"Temporaty directory {temporary_directory} does not exist"
+        )
+
+    venv_directory = tempfile.mkdtemp(suffix="-pipcanary", dir=temporary_directory)
     process = None
 
     try:
@@ -362,7 +372,12 @@ def pipcanary():
         requirement_file = args.requirement
         project_file = args.project
 
-        pip_options = PipOptions(args.index_url, args.extra_index_url)
+        pip_options = PipOptions(
+            temporary_directory=args.temporary_directory,
+            additional_directory=args.additional_directory,
+            index_url=args.index_url,
+            extra_index_url=args.extra_index_url,
+        )
 
         if requirement_file and project_file:
             raise InvalidArgumentError("Either --requirement or --project but not both")
@@ -389,7 +404,6 @@ def pipcanary():
             allowed_upload_times=args.allow_upload_time,
             ignore_vulns=args.ignore_vuln,
         )
-        additional_directory = args.additional_directory
         sandbox = args.sandbox
 
         if not requirement_file:
@@ -401,11 +415,10 @@ def pipcanary():
             )
 
         packages = scan_packages(
-            requirements_to_audit,
-            additional_directory,
-            trace_file,
-            sandbox,
-            pip_options,
+            requirements=requirements_to_audit,
+            sandbox=sandbox,
+            pip_options=pip_options,
+            trace_file=trace_file,
         )
         report = audit_packages(packages, selection, pip_options)
 

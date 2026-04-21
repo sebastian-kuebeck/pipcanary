@@ -102,7 +102,7 @@ class Vulnerability:
 
     def __contains__(self, ids):
         if not hasattr(ids, "__iter__"):
-            return False
+            ids = [ids]
 
         if self.id in ids:
             return True
@@ -130,13 +130,16 @@ class VersionInfo:
 
     def vulnerabilities(
         self, ignored_ids: Optional[Iterable[str]] = None
-    ) -> Iterable[Vulnerability]:
+    ) -> List[Vulnerability]:
         if not ignored_ids:
-            yield from self._vulnerabilities
+            return list(self._vulnerabilities)
         else:
+            vulns = []
+            ignored_vuln_ids = [VulnerabilityId(id) for id in ignored_ids]
             for vuln in self._vulnerabilities:
-                if ignored_ids not in vuln:
-                    yield vuln
+                if ignored_vuln_ids not in vuln:
+                    vulns.append(vuln)
+            return vulns
 
     @property
     def has_vulnerabilities(self):
@@ -226,12 +229,22 @@ class PackageSource(ABC):
 class PipOptions:
     PYPI_INDEX_URL = "https://pypi.org/pypi/"
 
+    # temporary_directory: Optional[str],
+    # additional_directory: Optional[str],
+    # trace_file: Optional[str],
+
     def __init__(
-        self, index_url: Optional[str] = None, extra_index_url: Optional[str] = None
+        self,
+        temporary_directory: Optional[str] = None,
+        additional_directory: Optional[str] = None,
+        index_url: Optional[str] = None,
+        extra_index_url: Optional[str] = None,
     ) -> None:
         self.default_index_url = self.PYPI_INDEX_URL
         self._index_url = index_url
         self._extra_index_url = extra_index_url
+        self.temporary_directory = temporary_directory
+        self.additional_directory = additional_directory
 
     @staticmethod
     def _normalize_url(url: str) -> str:

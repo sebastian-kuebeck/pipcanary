@@ -1,5 +1,11 @@
 # Changes
 
+## 0.0.10 (2026-04-26)
+
+- Fixed vulnerability filtering
+- Added support for tmporary directories
+- Added support for multiline requirement files
+
 ## 0.0.9 (2026-04-26)
 
 - Changed output to logging

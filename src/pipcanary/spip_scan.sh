@@ -37,7 +37,7 @@ export PATH="$VIRTUAL_ENV/bin:/usr/bin"
 
 echo "Running without bubblewrap. Stop with kill -9 $$ if it's not running in a suitable sandbox!"
 
-pip_install="pip install -r requirements.txt ${PIP_OPTIONS}"
+pip_install="pip install --no-cache -r requirements.txt ${PIP_OPTIONS}"
 
 echo "Starting: $pip_install..."
 

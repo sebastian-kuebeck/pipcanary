@@ -11,6 +11,24 @@ class RequirementsTest(unittest.TestCase):
         )
         self.project_file = os.path.join(os.path.dirname(__file__), "pyproject.toml")
 
+    def test_parse_requirements(self):
+        lines = [
+            "# remark", 
+            "boto3<=1.42.81",
+            "click<=\\ ",
+            "8.3.1",
+            "Werkzeug\\",
+            "<=3.1.7\\",
+        ]
+        self.assertEqual(
+            [
+                "boto3<=1.42.81",
+                "click<=8.3.1",
+                "Werkzeug<=3.1.7",
+            ],
+            Requirements.parse_requirements(lines),
+        )
+
     def test_from_requirements_file(self):
         requirements = Requirements.from_requirements_file(self.requirements_file)
         expected = [

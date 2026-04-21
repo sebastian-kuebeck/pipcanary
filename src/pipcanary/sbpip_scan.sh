@@ -30,7 +30,7 @@ cp -v $MODULE_LOADER_SOURCE $MODULE_LOADER
 # Wait for scanner
 sleep 0.5
 
-pip_install="pip install -r requirements.txt ${PIPCANARY_PIP_OPTIONS}"
+pip_install="pip install --no-cache -r requirements.txt ${PIPCANARY_PIP_OPTIONS}"
 
 echo "Running: $pip_install..."
 
