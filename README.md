@@ -17,12 +17,8 @@ It acts as a safety layer on top of your existing dependency management workflow
 ## Features
 
 - **Behavioral analysis** during package installation and loading using `strace` and `bubblewrap` sandboxing
-- **Known vulnmerability checks** warns about known vulnerabilities
+- **Known vulnerability checks** warns about known vulnerabilities
 - **Upload time checks** warns about packages released too recently (default: 7 days)
-
-## Limitations
-
-There are natural limitations to all checks PipCanary performs so running PipCanary is no gurantee to be secure. As such PipCanary (as well as any other security tool) can only be a part of a wider security strategy!
 
 ## Maturity
 
@@ -76,7 +72,7 @@ pipcanary
 All packages appear to be safe!
 ```
 
-#### Suspicious behaviour detected:
+#### Suspicious behavior detected:
 
 ```text
 ...
@@ -90,7 +86,7 @@ Don't install this package under any circumstances until you know for sure that 
 In doubt, contact the package maintainers!
 ```
 
-Not that PipCanary immediately kills the scanning process once it detects suspicious behaviour to
+Not that PipCanary immediately kills the scanning process once it detects suspicious behavior to
 prevent damage!
 
 #### Known vulnerabilities detected:
@@ -156,6 +152,33 @@ options:
                         Ignore the given vulnerability
 ```
 
+## Security Model
+
+PipCanary does the following:
+
+- It installs packages in a sandboxed environment (using bubblewrap) and tries to load all installed packages inside the sandboxed environment.
+
+- It scans the activities inside the sandboed environment for potentially malicious file system access (using strace).
+
+- If it detects potentially malicious file system access, it kills all processes in the sandboxed environment and reports its findings.
+
+- All packages get removed immediately after scanning.
+
+- After scanning, it consults the [PyPI JSON API](https://docs.pypi.org/api/json/) for known vulnerabilities of all installed packages and reports its findings.
+
+**Note that all of the precautions offer better security than running `pip install` alone "unprotected" but they do not guarantee absolute security for the packages being scanned or the scanning process itself**!
+
+### Examples:
+
+- The sandboxed environment has network access to the host machine during the installation process,
+  so it is **not advised to run it inside a network with access to sensitive systems or components**!
+
+- If a malicious packages postpones it's malicious activities after module loading, PipCanary has no chance of detecting this! **PipCanary does not contain a static source code scanner**!
+
+### Conclusion
+
+There are natural limitations to all checks PipCanary performs so **running PipCanary is no guarantee for perfect security**. As such PipCanary (as well as any other security tool) can only be a **part of a wider security strategy**!
+
 ## Similar Projects
 
 - [pip-audit](https://github.com/pypa/pip-audit)
@@ -163,6 +186,7 @@ options:
 
 ## Further Information on PyPi Suppy Chain Attacks
 
+- [OWASP Top 10 2025: A03 Software Supply Chain Failures](https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/)
+- [OWASP Top 10 2025: A08 Software or Data Integrity Failures](https://owasp.org/Top10/2025/A08_2025-Software_or_Data_Integrity_Failures/)
 - [How a Poisoned Security Scanner Became the Key to Backdooring LiteLLM](https://snyk.io/de/articles/poisoned-security-scanner-backdooring-litellm/)
 - [The Team PCP Snowball Effect: A Quantitative Analysis](https://blog.gitguardian.com/team-pcp-snowball-analysis/)
-
