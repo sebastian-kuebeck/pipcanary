@@ -17,8 +17,18 @@ It acts as a safety layer on top of your existing dependency management workflow
 ## Features
 
 - **Behavioral analysis** during package installation and loading using `strace` and `bubblewrap` sandboxing
+
 - **Known vulnerability checks** warns about known vulnerabilities
+
 - **Upload time checks** warns about packages released too recently (default: 7 days)
+
+## Design Goals
+
+- **Simple, focused design**. Following UNIX philosophy, PipCanary aims to assist in protecting against supply chain attacks and that's it.  
+
+- **Minimize False Positives as much as possible**. The goal is to find clear indicators for security problems and no advice for manual inspection. That's the conceptual difference between a *canary* and a *source code scanner*.
+
+- **No additional liability**. It should integrate with existing tooling without causing unnecessary impediments.
 
 ## Maturity
 
@@ -151,6 +161,21 @@ options:
   --ignore-vuln IGNORE_VULN
                         Ignore the given vulnerability
 ```
+
+## Exit Codes
+
+PipCanary Exit Codes, description and recommended actions.
+
+| Exit Code | Description                            | Recommended Action                   |
+| --------- | ---------------------------------------| ------------------------------------ |
+|       -1  | Preconditions to run this tool failed. Examples: Missing bubblewrap, strace.  | Fix precondition and rerun PipCanary. |
+|        0  | Scan and subsequent Audit completed successfully. | It is safe to continue. |                               
+|        1  | Invalid argument value. | Fix arguments and rerun PipCanary. |
+|        2  | Scanning process crashed. | Check error message for details. |
+|        3  | Failed to download package Information from Index.  | Fix connection to index and rerun PipCanary. |
+|        4  | Known vulnerability or too recent upload detected.  | Change requirements and/or PipCanary arguments and rerun PipCanary |
+|        5  | Malicious activity detected during scan. | Hard Block & Quarantine: Immediately terminate the build. Delete the build workspace and alert the Incident Response (IR) team for a potential supply-chain attack.|
+
 
 ## Security Model
 
