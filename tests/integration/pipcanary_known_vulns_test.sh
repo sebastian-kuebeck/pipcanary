@@ -14,7 +14,8 @@ cleanup() {
 trap cleanup EXIT
 
 cat << END > $REQUIREMENTS_FILE 
-    Werkzeug
+    pygments<=1.1
+    flask<=3.1.2
     pip==26.1
 END
 
@@ -22,5 +23,5 @@ set +e
 
 export PYTHONPATH=./src
 
-python -m pipcanary -r $REQUIREMENTS_FILE -c 1024
+python -m pipcanary -r $REQUIREMENTS_FILE 
 rc=$?

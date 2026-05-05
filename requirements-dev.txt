@@ -7,15 +7,6 @@ build~=1.4.0
 # Formatting
 black~=26.3.1
 
-# SBOM Generation
-# debsbom[cdx,spdx,download]~=0.7.2
-# cyclonedx-bom~=7.3.0
-# owasp-dependency-track-cli
-
-# Documentation
-# jupyter~=1.1.1
-# jupyterlab-rise~=0.43.1
-
 # Validation
 ruff<=0.15.10
 Pyright~=1.1.408
@@ -35,3 +26,14 @@ cachetools<=7.0.5
 click<=8.3.2
 uritools<=6.0.2
 pip>=26.1
+
+# SBOM Generation
+# cyclonedx-bom~=7.3.0
+# owasp-dependency-track-cli
+
+# Documentation
+# jupyter~=1.1.1
+# jupyterlab-rise~=0.43.1
+
+# PyPi
+# twine~=6.2.0
