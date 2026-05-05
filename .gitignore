@@ -27,3 +27,4 @@ coverage.xml
 nosetests.xml
 .tox
 strace.out
+.ipynb_checkpoints

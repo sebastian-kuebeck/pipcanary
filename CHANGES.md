@@ -1,9 +1,13 @@
 # Changes
 
+## 0.0.11 (2026-05-26)
+
+- Added "locked" requirements file generation
+
 ## 0.0.10 (2026-04-26)
 
 - Fixed vulnerability filtering
-- Added support for tmporary directories
+- Added support for temporary directories
 - Added support for multiline requirement files
 
 ## 0.0.9 (2026-04-26)

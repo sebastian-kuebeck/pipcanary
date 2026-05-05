@@ -14,7 +14,7 @@ dist:
 	rm -rf src/pipcanary.egg-info
 
 format:
-	black src tests evilpack
+	black --fast src tests evilpack
 
 validate:
 	pyright src tests
@@ -22,8 +22,8 @@ validate:
 	bandit -q -r src tests --severity-level medium
 
 audit:
-	python -m pipcanary -r requirements.txt
-	python -m pipcanary -p pyproject.toml
+	python -m pipcanary -p pyproject.toml -l requirements-locked.txt --allow-upload-time='virtualenv<=2026-04-27T17:05:58'
+	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt
 
 test:
 	python -m unittest discover -v -s tests/unit -p '*_test.py'

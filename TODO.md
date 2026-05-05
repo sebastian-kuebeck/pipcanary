@@ -1,8 +1,8 @@
-- pass through PIP environment variables if possible
-- transfer pip config https://pip.pypa.io/en/stable/topics/configuration/
-- generate locked requirements file or pyproject.toml
-- add configuratiuon to pyproject.toml
-- generate json report
-- sarif output
+- Pass through pip args as parameter pip-args like pip-tools
+- Add Proxy support
+- Pass through PIP environment variables if possible
+- Add configuration to pyproject.toml
+- Generate json report
+- Generate SARIF output
 - add caching for already scanned packages.
 - improve documentation

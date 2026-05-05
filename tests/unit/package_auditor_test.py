@@ -20,11 +20,11 @@ from pipcanary.package_auditor import (
 class TestPackageSource(PackageSource):
     __test__ = False
 
-    sample_package_info_pathes = {
+    sample_package_info_paths = {
         "pygments": os.path.join(os.path.dirname(__file__), "pygments.json")
     }
 
-    sample_version_info_pathes = {
+    sample_version_info_paths = {
         "pygments:2.19.0": os.path.join(
             os.path.dirname(__file__), "pygments-2.19.0.json"
         ),
@@ -34,7 +34,7 @@ class TestPackageSource(PackageSource):
     }
 
     def download_package_info(self, package_name: str) -> Optional[PackageInfo]:
-        path = self.sample_package_info_pathes.get(package_name)
+        path = self.sample_package_info_paths.get(package_name)
         if path:
             with open(path, "rb") as f:
                 return PackageInfo.from_json(json.load(f))
@@ -42,7 +42,7 @@ class TestPackageSource(PackageSource):
     def download_version_info(
         self, package_version: PackageVersion
     ) -> Optional[VersionInfo]:
-        path = self.sample_version_info_pathes.get(str(package_version))
+        path = self.sample_version_info_paths.get(str(package_version))
         if path:
             with open(path, "rb") as f:
                 return VersionInfo.from_json(json.load(f))
@@ -85,6 +85,15 @@ class TestVersionInfo(unittest.TestCase):
 
     def test_aliases_ignored(self):
         self.assertEqual([], self.info.vulnerabilities(["CVE-2026-4539"]))
+
+    def test_hashes(self):
+        self.assertEqual(
+            {
+                "pygments-2.19.0-py3-none-any.whl": "4755e6e64d22161d5b61432c0600c923c5927214e7c956e31c23923c89251a9b",
+                "pygments-2.19.0.tar.gz": "afc4146269910d4bdfabcd27c24923137a74d562a23a320a41a55ad303e19783",
+            },
+            self.info.hashes,
+        )
 
 
 class TestPackage(unittest.TestCase):
@@ -217,6 +226,24 @@ class TestPackageAuditor(unittest.TestCase):
         self.assertEqual(0, len(self.observer.versions_not_found))
         self.assertEqual(0, len(self.observer.vulnerable))
         self.assertEqual(1, len(self.observer.too_recently))
+
+    def test_audit_generate_locked_requirements(self):
+        package_data = [
+            {"name": "pygments", "version": "2.20.0"},
+            {"name": "unknown", "version": "0.0.1"},
+        ]
+        self.selection = AuditSelection(
+            current_time=datetime.fromisoformat("2026-04-26T10:55:24")
+        )
+        report = self.packages.audit(self.selection, package_data)
+        self.assertEqual(
+            [
+                "Pygments==2.20.0 \\\n",
+                "  --hash=sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176 \\\n",
+                "  --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f\n",
+            ],
+            report.locked_requirements(),
+        )
 
 
 class TestPipOptions(unittest.TestCase):

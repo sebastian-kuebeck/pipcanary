@@ -8,3 +8,4 @@ requests
 flask
 pyyaml
 numpy
+pip==26.1

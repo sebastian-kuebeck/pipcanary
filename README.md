@@ -208,6 +208,7 @@ There are natural limitations to all checks PipCanary performs so **running PipC
 
 - [pip-audit](https://github.com/pypa/pip-audit)
 - [guarddog](https://github.com/DataDog/guarddog)
+- [pip-tools](https://pypi.org/project/pip-tools/)
 
 ## Further Information on PyPi Suppy Chain Attacks
 

@@ -1,6 +1,6 @@
 import os
 import re
-import tomli
+import tomli as toml
 import tempfile
 
 from typing import List, Optional
@@ -36,12 +36,12 @@ class Requirements:
                 continue
 
             if multiline_requirement:
-                requrement = multiline_requirement + line
+                requirement = multiline_requirement + line
                 multiline_requirement = ""
             else:
-                requrement = line
+                requirement = line
 
-            requirements.append(requrement)
+            requirements.append(requirement)
         if multiline_requirement:
             requirements.append(multiline_requirement)
         return requirements
@@ -50,7 +50,7 @@ class Requirements:
     def from_project_file(cls, path: str):
         try:
             with open(path, "rb") as input:
-                dependencies = tomli.load(input)["project"]["dependencies"]
+                dependencies = toml.load(input)["project"]["dependencies"]
                 assert isinstance(dependencies, list)
                 return cls(dependencies)
         except (KeyError, ValueError, AssertionError) as e:
@@ -59,18 +59,18 @@ class Requirements:
             raise RequirementsError(f"Failed to load project file: {path}: {str(e)}")
 
     def skip_packages(self, requirements_or_packages: List[str]) -> "Requirements":
-        reduced_rquirements: List[str] = []
+        reduced_requirements: List[str] = []
         for requirement in self.requirements:
             match = self.PYPI_REQUIREMENT.match(requirement)
             if match:
                 package = match.groups()[0]
                 if package not in requirements_or_packages:
-                    reduced_rquirements.append(requirement)
+                    reduced_requirements.append(requirement)
             else:
                 if requirement not in requirements_or_packages:
-                    reduced_rquirements.append(requirement)
+                    reduced_requirements.append(requirement)
 
-        return Requirements(reduced_rquirements)
+        return Requirements(reduced_requirements)
 
     def write_to_temporary_file(self) -> str:
         fp: Optional[int] = None

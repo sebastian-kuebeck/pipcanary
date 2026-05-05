@@ -46,6 +46,8 @@ from .package_auditor import (
     AuditReport,
 )
 
+PIPCANARY_VERSION = "0.0.11"
+
 
 class SuspiciousAccessDetected(Exception):
     def __init__(self, finding: Finding) -> None:
@@ -74,12 +76,12 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
         self._selection = selection
 
     @staticmethod
-    def aliterate(vs: List[Any]):
+    def alliterate(vs: List[Any]):
         return ", ".join([str(v) for v in vs])
 
     def version_is_vulnerable(self, info: VersionInfo):
         logger.error(
-            f"Package {str(info.version)} has known vulnerabilities: {self.aliterate(info.vulnerabilities())}."
+            f"Package {str(info.package_version)} has known vulnerabilities: {self.alliterate(info.vulnerabilities())}."
         )
 
     def version_not_found(self, version: PackageVersion):
@@ -101,8 +103,8 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
             if not info:
                 message += f"  - There is no security information on PyPi about the next suitable release {package.name}: {upload.version}\n"
             elif info.has_vulnerabilities:
-                vulns = self.aliterate(info.vulnerabilities())
-                message += f"  - The next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulns}\n"
+                vulnerabilities = self.alliterate(info.vulnerabilities())
+                message += f"  - The next suitable release {package.name}: {upload.version} has known vulnerabilities though: {vulnerabilities}\n"
             else:
                 message += f"  - Consider {package.name}<={upload.version} which has no known vulnerabilities\n"
 
@@ -120,14 +122,12 @@ class LoggingPackageAuditObserver(PackageAuditObserver):
 SCAN_SCRIPT_SANDBOXED = os.path.join(os.path.dirname(__file__), "sbpip_scan.sh")
 SCAN_SCRIPT = os.path.join(os.path.dirname(__file__), "spip_scan.sh")
 
-VERSION = "0.0.10"
-
 parser = ArgumentParser(
     prog="pipcanary",
-    description=f"PipCanary {VERSION} detects supply chain attacks and known vulnerabilities in python dependencies",
+    description=f"PipCanary {PIPCANARY_VERSION} detects supply chain attacks and known vulnerabilities in python dependencies",
 )
 
-parser.add_argument("--version", action="version", version=VERSION)
+parser.add_argument("--version", action="version", version=PIPCANARY_VERSION)
 parser.add_argument(
     "-r", "--requirement", help=("The requirements file, usually requirements.txt.")
 )
@@ -220,6 +220,14 @@ parser.add_argument(
     help=("Temporary directory. Default: /tmp"),
 )
 
+parser.add_argument(
+    "-l",
+    "--locked-requirement",
+    help=(
+        'generates a "locked" file with all requirements, the scanned version with hashes'
+    ),
+)
+
 
 def scan_packages(
     requirements: Requirements,
@@ -246,7 +254,7 @@ def scan_packages(
     temporary_directory = pip_options.temporary_directory
     if temporary_directory and not os.path.isdir(temporary_directory):
         raise InvalidArgumentError(
-            f"Temporaty directory {temporary_directory} does not exist"
+            f"Temporary directory {temporary_directory} does not exist"
         )
 
     venv_directory = tempfile.mkdtemp(suffix="-pipcanary", dir=temporary_directory)
@@ -325,7 +333,7 @@ def audit_packages(
     if report.vulnerable_versions:
         message += (
             "  - Vulnerabilities in the following package(s) were found: %s.\n"
-            % (", ".join([str(v.version) for v in report.vulnerable_versions]))
+            % (", ".join([str(v.package_version) for v in report.vulnerable_versions]))
         )
 
     if report.too_recent_packages:
@@ -333,7 +341,7 @@ def audit_packages(
             ", ".join([p.name for p in report.too_recent_packages])
         )
 
-    if report.hasFindings():
+    if report.has_findings():
         raise AuditFailedError(message)
 
     return report
@@ -371,6 +379,7 @@ def pipcanary():
     try:
         requirement_file = args.requirement
         project_file = args.project
+        locked_requirement_file = args.locked_requirement
 
         pip_options = PipOptions(
             temporary_directory=args.temporary_directory,
@@ -406,14 +415,6 @@ def pipcanary():
         )
         sandbox = args.sandbox
 
-        if not requirement_file:
-            requirement_file = os.path.join(os.path.curdir, "requirements.txt")
-
-        if not os.path.exists(requirement_file):
-            raise InvalidArgumentError(
-                "Requirements file %s does not exist" % requirement_file
-            )
-
         packages = scan_packages(
             requirements=requirements_to_audit,
             sandbox=sandbox,
@@ -426,9 +427,14 @@ def pipcanary():
             logger.info("All packages appear to be safe!")
         else:
             logger.info("%d vulnerabilities ignored." % len(report.ignored_vulns))
+
+        if locked_requirement_file:
+            logging.info(f"Writing locked requirements file: {locked_requirement_file}")
+            report.write_locked_requirements(locked_requirement_file)
+
     except (InvalidArgumentError, RequirementsError) as e:
         logger.error(str(e))
-        exit(ExitCodes.INVAID_ARGUMENT)
+        exit(ExitCodes.INVALID_ARGUMENT)
     except ScanFailedError as e:
         logger.error(str(e))
         exit(ExitCodes.SCAN_FAILED)

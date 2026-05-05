@@ -15,7 +15,7 @@ trap cleanup EXIT
 
 cat << END > $REQUIREMENTS_FILE 
     Werkzeug
-    pip>=26.0.1
+    pip==26.1
 END
 
 set +e

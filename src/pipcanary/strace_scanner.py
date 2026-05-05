@@ -14,7 +14,7 @@ RULE_SET = [
         ],
         "designation": "root_directory",
         "description": "Namespace detection.",
-        "explanation": "The package might be trying to figure out if it is running in a virual environment. This is very unusual for a legitimate package so it's a strong indicator for malware.",
+        "explanation": "The package might be trying to figure out if it is running in a virtual environment. This is very unusual for a legitimate package so it's a strong indicator for malware.",
     },
     {
         "patterns": [

@@ -13,7 +13,7 @@ class RequirementsTest(unittest.TestCase):
 
     def test_parse_requirements(self):
         lines = [
-            "# remark", 
+            "# remark",
             "boto3<=1.42.81",
             "click<=\\ ",
             "8.3.1",

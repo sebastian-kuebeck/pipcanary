@@ -21,7 +21,7 @@ dependencies = [
   "platformdirs<=4.9.4",
   "python-discovery<=1.2.1",
   "filelock<=3.25.2",
-  "pip>=26.0.1"
+  "pip==26.1"
 ]
 END
 

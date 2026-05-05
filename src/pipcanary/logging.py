@@ -5,13 +5,13 @@ from logging import StreamHandler
 from .errors import InvalidArgumentError
 
 
-class BistreamHandler(StreamHandler):
+class BiStreamHandler(StreamHandler):
     def emit(self, record):
         try:
             msg = self.format(record)
-            errstream = self.stream
+            error_stream = self.stream
             if record.levelno > 20:
-                errstream.write(msg + self.terminator)
+                error_stream.write(msg + self.terminator)
                 self.flush()
             else:
                 print(msg)
@@ -38,6 +38,6 @@ def set_up_logging(format: str, level: str):
         root.removeHandler(h)
         h.close()
 
-    handler = BistreamHandler()
+    handler = BiStreamHandler()
     handler.setFormatter(logging.Formatter(format))
     root.addHandler(handler)
