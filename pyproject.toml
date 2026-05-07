@@ -27,7 +27,9 @@ dependencies = [
   "filelock<=3.25.2",
   "platformdirs<=4.9.4",
   "tomli<=2.4.1",
-  "virtualenv<=21.2.0"
+  "virtualenv<=21.2.0",
+  "pip==26.1",
+  "python-discovery<=1.2.2"
 ]
 
 [project.urls]

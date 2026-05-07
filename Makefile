@@ -22,7 +22,7 @@ validate:
 	bandit -q -r src tests --severity-level medium
 
 audit:
-	python -m pipcanary -p pyproject.toml -l requirements-locked.txt --allow-upload-time='virtualenv<=2026-04-27T17:05:58'
+	python -m pipcanary -p pyproject.toml -l requirements-locked.txt
 	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt
 
 test:
@@ -56,3 +56,9 @@ publish: dist
 #
 tox:
 	tox -p
+
+html:
+	cd docs && make clean html && make html
+
+browse_doc: html
+	firefox docs/_build/html/index.html

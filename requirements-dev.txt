@@ -16,6 +16,11 @@ pytest~=9.0.2
 tox~=4.50.3
 bandit~=1.9.4
 
+# Documentation
+
+Sphinx<=9.1.0
+sphinx-rtd-theme<=3.1.0
+
 # Security
 build<=1.4.2
 filelock<=3.25.2
@@ -25,7 +30,9 @@ rich<=14.3.3
 cachetools<=7.0.5
 click<=8.3.2
 uritools<=6.0.2
-pip>=26.1
+pip==26.1
+markdown-it-py<=4.0.0
+python-discovery<=1.2.2
 
 # SBOM Generation
 # cyclonedx-bom~=7.3.0

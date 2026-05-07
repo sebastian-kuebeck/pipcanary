@@ -70,7 +70,7 @@ without argument, it checks the `pyproject.toml` or `requirements.txt` in the cu
 
 
 ```bash
-pipcanary
+pipcanary -p pyproject.toml
 ```
 
 ### Example Outputs
@@ -226,6 +226,12 @@ There are natural limitations to all checks PipCanary performs so **running PipC
 
 ## Further Information on PyPi Suppy Chain Attacks
 
+### OWASP Top 10 2025
+
 - [OWASP Top 10 2025: A03 Software Supply Chain Failures](https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/)
 - [OWASP Top 10 2025: A08 Software or Data Integrity Failures](https://owasp.org/Top10/2025/A08_2025-Software_or_Data_Integrity_Failures/)
 
+### Incidents
+
+- [PyTorch Lightning and Intercom-client Hit in Supply Chain Attacks to Steal Credentials](https://thehackernews.com/2026/04/pytorch-lightning-compromised-in-pypi.html)
+- [Incident Report: LiteLLM/Telnyx supply-chain attacks, with guidance](https://blog.pypi.org/posts/2026-04-02-incident-report-litellm-telnyx-supply-chain-attack/)
