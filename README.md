@@ -14,6 +14,10 @@ PipCanary helps protect your Python projects from supply chain attacks by:
 
 It acts as a safety layer on top of your existing dependency management workflow.
 
+## Documentation
+
+[PipCanary Documentation](https://pipcanary.readthedocs.io/en/latest/)
+
 ## Features
 
 - **Behavioral analysis** during package installation and loading using `strace` and `bubblewrap` sandboxing
@@ -21,6 +25,7 @@ It acts as a safety layer on top of your existing dependency management workflow
 - **Known vulnerability checks** warns about known vulnerabilities
 
 - **Upload time checks** warns about packages released too recently (default: 7 days)
+
 
 ## Design Goals
 
