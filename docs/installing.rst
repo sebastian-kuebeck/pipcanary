@@ -36,35 +36,7 @@ Install in Container
 -  `Docker <https://www.docker.com/>`__ from your Linux distribution or
    Docker Desktop.
 
-2. Create Dockerfile
-
-.. code:: Dockerfile
-
-   FROM python:3.14.4-slim-trixie
-
-   # ------------------------------------------------
-   # Install strace and bubblewrap for pipcanary
-   #
-   RUN apt-get -q update && \
-      apt-get -y -q install bubblewrap strace
-
-   # ------------------------------------------------
-   # Install virtualenv
-   #
-   ENV VIRTUAL_ENV=/opt/cienv
-   ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-   RUN python3 -m venv $VIRTUAL_ENV && \ 
-      pip install --upgrade pip
-
-   #---------------------------------------------
-   # Install PipCanary
-   #
-   RUN pip install pipcanary==0.0.11
-
-   #-------------------------------------------------
-   # Run scans and create a locked requirements file
-   #
-   CMD ["bash", "pipcanary -r /var/shared/requirements.txt -l /var/shared/requirements-locked.txt"]
+see: https://github.com/sebastian-kuebeck/pipcanary/tree/main/examples/ci-cd/
 
 3. Build container
 

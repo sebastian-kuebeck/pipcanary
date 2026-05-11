@@ -23,7 +23,7 @@ build:
 	docker build -t pipcanary-cicd .
 
 run:
-	cp requirements.txt shared
+	cp pyproject.toml shared
 	docker run --privileged -v "$(PWD)/shared:/var/shared" pipcanary-cicd
 
 # Uploads SBOM to Dependency-Track and analyzes it (optional) 

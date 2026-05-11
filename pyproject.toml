@@ -1,6 +1,6 @@
 [project]
 name = "pipcanary"
-version = "0.0.11"
+version = "0.0.12"
 authors = [
   { name="Sebastian Kuebeck", email="sebastian.kuebeck@encab.io" },
 ]
@@ -9,7 +9,7 @@ description = "Supply Chain Attack prevention tool"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -19,8 +19,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Intended Audience :: Developers",
-    "Intended Audience :: System Administrators"
+    "Intended Audience :: System Administrators",
+    "Topic :: Security", 
+    "Environment :: Console"
 ]
+
 
 dependencies = [
   "distlib<=0.4.0",

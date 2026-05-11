@@ -12,7 +12,8 @@ class ExitCodes(IntEnum):
 
 
 class InvalidArgumentError(Exception):
-    pass
+    def __init__(self, argument: str, message: str, *args) -> None:
+        super().__init__(*[f"Invalid argument {argument}: {message}", *args])
 
 
 class ScanFailedError(Exception):

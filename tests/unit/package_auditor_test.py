@@ -11,26 +11,23 @@ from pipcanary.package_auditor import (
     Package,
     PackageAuditObserver,
     AuditSelection,
-    PipOptions,
     PackageVersion,
     VersionInfo,
 )
+
+TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data")
 
 
 class TestPackageSource(PackageSource):
     __test__ = False
 
     sample_package_info_paths = {
-        "pygments": os.path.join(os.path.dirname(__file__), "pygments.json")
+        "pygments": os.path.join(TEST_DATA_DIR, "pygments.json")
     }
 
     sample_version_info_paths = {
-        "pygments:2.19.0": os.path.join(
-            os.path.dirname(__file__), "pygments-2.19.0.json"
-        ),
-        "pygments:2.20.0": os.path.join(
-            os.path.dirname(__file__), "pygments-2.20.0.json"
-        ),
+        "pygments:2.19.0": os.path.join(TEST_DATA_DIR, "pygments-2.19.0.json"),
+        "pygments:2.20.0": os.path.join(TEST_DATA_DIR, "pygments-2.20.0.json"),
     }
 
     def download_package_info(self, package_name: str) -> Optional[PackageInfo]:
@@ -123,7 +120,7 @@ class TestAuditSelection(unittest.TestCase):
         selection = AuditSelection(current_time=now)
         self.assertTrue(
             now - timedelta(days=AuditSelection.COOL_DOWN_PHASE_DAYS),
-            selection.max_upload_time("any"),
+            selection.max_upload_time_for("any"),
         )
 
     def test_custom_selection(self):
@@ -131,20 +128,24 @@ class TestAuditSelection(unittest.TestCase):
         selection = AuditSelection(cool_down_phase_days=2, current_time=now)
         self.assertTrue(
             now - timedelta(days=2),
-            selection.max_upload_time("any"),
+            selection.max_upload_time_for("any"),
         )
 
     def test_general_max_upload_time(self):
         now = datetime.fromisoformat("2026-03-29T10:55:24")
-        selection = AuditSelection("2026-03-29T10:55:24")
-        self.assertEqual(now, selection.max_upload_time("any"))
+        selection = AuditSelection(max_upload_time=now)
+        self.assertEqual(now, selection.max_upload_time_for("any"))
 
-    def test_specific_max_upload_time(self):
+    def test_allowed_upload_times(self):
         now = datetime.fromisoformat("2026-03-29T10:55:24")
+        encab_upload_time = datetime.fromisoformat("2026-04-29T10:55:24")
         selection = AuditSelection(
-            "2026-03-29T10:55:24", allowed_upload_times="encab<=2026-03-29T10:55:24"
+            max_upload_time=now,
+            allowed_upload_times={"encab": encab_upload_time},
+            current_time=now,
         )
-        self.assertEqual(now, selection.max_upload_time("any"))
+        self.assertEqual(now, selection.max_upload_time_for("any"))
+        self.assertEqual(encab_upload_time, selection.max_upload_time_for("encab"))
 
 
 class TestPackageCheckObserver(PackageAuditObserver):
@@ -243,31 +244,4 @@ class TestPackageAuditor(unittest.TestCase):
                 "  --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f\n",
             ],
             report.locked_requirements(),
-        )
-
-
-class TestPipOptions(unittest.TestCase):
-    def setUp(self):
-        self.options = PipOptions(
-            index_url="http://localhost:3141/root/pypi/+simple/",
-            extra_index_url="http://localhost:3141/root/pypi/+test/",
-        )
-
-    def test_encode_to_shell(self):
-        self.assertEqual(
-            "--index-url http://localhost:3141/root/pypi/+simple/ --extra-index-url http://localhost:3141/root/pypi/+test/",
-            self.options.encode_for_shell(),
-        )
-
-    def test_pip_environment(self):
-        self.options = PipOptions(
-            index_url="http://localhost:3141/root/pypi/+simple/",
-            extra_index_url="http://localhost:3141/root/pypi/+test/",
-        )
-        self.assertEqual(
-            {
-                "PIP_INDEX_URL": "http://localhost:3141/root/pypi/+simple/",
-                "PIP_EXTRA_INDEX_URL": "http://localhost:3141/root/pypi/+test/",
-            },
-            self.options.pip_environment(),
         )

@@ -17,7 +17,7 @@ cat << END > $REQUIREMENTS_FILE
     Werkzeug<=3.1.7
     click<=8.3.1
     flask
-    pip<26.0.0
+    pip==26.1
 END
 
 set +e

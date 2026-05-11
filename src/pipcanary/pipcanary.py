@@ -5,7 +5,6 @@ import tempfile
 import json
 import shutil
 import time
-import argparse
 import logging
 
 from subprocess import CalledProcessError
@@ -13,7 +12,7 @@ from typing import List, Dict, Any, Optional
 from argparse import ArgumentParser
 from datetime import datetime
 
-from .logging import set_up_logging, LOG_LEVELS
+from .logging import set_up_logging
 
 from .errors import (
     ExitCodes,
@@ -23,6 +22,8 @@ from .errors import (
     PackageDownloadError,
     RequirementsError,
 )
+
+from .parameters import PipCanaryParameters
 
 from .requirements import Requirements
 
@@ -46,7 +47,7 @@ from .package_auditor import (
     AuditReport,
 )
 
-PIPCANARY_VERSION = "0.0.11"
+PIPCANARY_VERSION = "0.0.12"
 
 
 class SuspiciousAccessDetected(Exception):
@@ -128,105 +129,9 @@ parser = ArgumentParser(
 )
 
 parser.add_argument("--version", action="version", version=PIPCANARY_VERSION)
-parser.add_argument(
-    "-r", "--requirement", help=("The requirements file, usually requirements.txt.")
-)
-parser.add_argument(
-    "-p",
-    "--project",
-    help=(
-        "The project file in TOML format. Usually pyproject.toml. "
-        "If neither -p or -r are set, ./pyproject.toml or if not exists ./requirements.txt is scanned."
-    ),
-)
 
-parser.add_argument(
-    "--max-upload-time",
-    help=(
-        "Maximum upload time for all packages (ISO 8601 date and time format). "
-        "Example: --max-upload-time='2026-04-07T07:43:51+0000'"
-    ),
-)
-parser.add_argument(
-    "-c",
-    "--cool-down-phase-days",
-    help=("Cool-down phase for packages in days for new package uploads. Default: 7"),
-)
-parser.add_argument(
-    "-a",
-    "--allow-upload-time",
-    action="append",
-    help=(
-        "Maximum upload time for a single package (ISO 8601 date and time format). "
-        "Example: --allow-upload-time='requests<=2026-04-07T07:43:51+0000"
-    ),
-)
-
-parser.add_argument(
-    "-d",
-    "--additional-directory",
-    help=(
-        "Additional directory mapped into the sandbox while scanning"
-        "Make sure this directory does not contain sensitive information!"
-    ),
-)
-
-parser.add_argument(
-    "-t",
-    "--trace-file",
-    help=("The trace file for further analysis"),
-)
-
-parser.add_argument(
-    "--sandbox",
-    help=(
-        "Run with sandbox (default). No sandbox might be safe if you are already running within a sandbox!"
-    ),
-    action=argparse.BooleanOptionalAction,
-    default=True,
-)
-
-parser.add_argument(
-    "--do-not-scan",
-    action="append",
-    help=("Add packages that should not be scanned"),
-)
-
-parser.add_argument(
-    "-i",
-    "--index-url",
-    help=("URL to PyPi compatible repository"),
-)
-
-parser.add_argument(
-    "--extra-index-url",
-    help=("Extra URL to PyPi compatible repository"),
-)
-
-parser.add_argument(
-    "--ignore-vuln",
-    action="append",
-    help=("Ignore the given vulnerability"),
-)
-
-parser.add_argument(
-    "--log-level",
-    help=("The log level. Supported levels are: %s" % (", ".join(LOG_LEVELS))),
-    default="INFO",
-)
-
-parser.add_argument(
-    "--temporary-directory",
-    help=("Temporary directory. Default: /tmp"),
-)
-
-parser.add_argument(
-    "-l",
-    "--locked-requirement",
-    help=(
-        'generates a "locked" file with all requirements, the scanned version with hashes'
-    ),
-)
+parameters = PipCanaryParameters()
+parameters.add_arguments(parser)
 
 
 def scan_packages(
@@ -252,11 +157,6 @@ def scan_packages(
     env["PIPCANARY_REQUIREMENTS_FILE"] = requirements_file
 
     temporary_directory = pip_options.temporary_directory
-    if temporary_directory and not os.path.isdir(temporary_directory):
-        raise InvalidArgumentError(
-            f"Temporary directory {temporary_directory} does not exist"
-        )
-
     venv_directory = tempfile.mkdtemp(suffix="-pipcanary", dir=temporary_directory)
     process = None
 
@@ -271,7 +171,7 @@ def scan_packages(
         )
         logging.info(
             "Scanning packages for %d requirements..."
-            % (len(requirements.requirements))
+            % (len(requirements._requirements))
         )
 
         if logger.isEnabledFor(logging.DEBUG):
@@ -364,64 +264,36 @@ def check_package(package: str, test_command: List[str]):
 
 
 def pipcanary():
-    args = parser.parse_args()
-
-    if args.log_level == "DEBUG":
-        log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    else:
-        log_format = "%(message)s"
-
-    set_up_logging(log_format, args.log_level)
-
-    check_package("venv", ["sh", "-c", "python3 -m venv --help 1>/dev/null"])
-    check_command("strace", ["sh", "-c", "strace -V 1>/dev/null"])
-
     try:
-        requirement_file = args.requirement
-        project_file = args.project
-        locked_requirement_file = args.locked_requirement
+        parameters.fill(parser.parse_args())
 
-        pip_options = PipOptions(
-            temporary_directory=args.temporary_directory,
-            additional_directory=args.additional_directory,
-            index_url=args.index_url,
-            extra_index_url=args.extra_index_url,
-        )
-
-        if requirement_file and project_file:
-            raise InvalidArgumentError("Either --requirement or --project but not both")
-
-        if not requirement_file and not project_file:
-            if os.path.exists("pyproject.toml"):
-                project_file = "pyproject.toml"
-                logger.info("Using ./pyproject.toml")
-            elif os.path.exists("requirements.txt"):
-                requirement_file = "requirements.txt"
-                logger.info("Using ./requirements.txt")
-
-        if project_file:
-            requirements = Requirements.from_project_file(project_file)
+        if parameters.log_level == "DEBUG":
+            log_format = "%(asctime)s - %(levelname)s - %(message)s"
         else:
-            requirements = Requirements.from_requirements_file(requirement_file)
+            log_format = "%(message)s"
 
-        requirements_to_audit = requirements.skip_packages(args.do_not_scan or [])
+        set_up_logging(log_format, parameters.log_level)
 
-        trace_file = args.trace_file
-        selection = AuditSelection(
-            max_upload_time=args.max_upload_time,
-            cool_down_phase_days=args.cool_down_phase_days,
-            allowed_upload_times=args.allow_upload_time,
-            ignore_vulns=args.ignore_vuln,
-        )
-        sandbox = args.sandbox
+        check_package("venv", ["sh", "-c", "python3 -m venv --help 1>/dev/null"])
+        check_command("strace", ["sh", "-c", "strace -V 1>/dev/null"])
+
+        requirements = parameters.requirements()
+        locked_requirement_file = parameters.locked_requirements_file
+
+        pip_options = parameters.pipOptions()
+        requirements_to_audit = requirements.skip_packages(parameters.do_not_scan or [])
+
+        if parameters.log_level == "DEBUG":
+            logger.debug("Parameters: %s" % parameters.values)
+            logger.debug("Requirements_to_audit: %s" % requirements_to_audit.list())
 
         packages = scan_packages(
             requirements=requirements_to_audit,
-            sandbox=sandbox,
+            sandbox=parameters.sandbox,
             pip_options=pip_options,
-            trace_file=trace_file,
+            trace_file=parameters.trace_file,
         )
-        report = audit_packages(packages, selection, pip_options)
+        report = audit_packages(packages, parameters.auditSelection(), pip_options)
 
         if not report.ignored_vulns:
             logger.info("All packages appear to be safe!")

@@ -25,5 +25,5 @@ END
 set +e
 
 export PYTHONPATH=./src
-python -m pipcanary -r $REQUIREMENTS_FILE --additional-directory=$WHEEL_PATH --trace-file strace.out
+python -m pipcanary -r $REQUIREMENTS_FILE --additional-directory=$WHEEL_PATH --trace-file strace.out --log-level DEBUG
 rc=$?

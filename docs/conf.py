@@ -9,7 +9,7 @@
 project = 'PipCanary'
 copyright = '2026, Sebastian Kuebeck'
 author = 'Sebastian Kuebeck'
-release = '0.0.11'
+release = '0.0.12'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

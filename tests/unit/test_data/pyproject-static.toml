@@ -1,0 +1,14 @@
+[project]
+name = "static-test"
+
+dependencies = [
+  "virtualenv==21.2.0", 
+  "tomli==2.4.1"
+]
+
+[project.optional-dependencies]
+gui = ["PyQt5"]
+cli = [
+  "rich",
+  "click",
+]

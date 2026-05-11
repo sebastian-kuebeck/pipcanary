@@ -1,6 +1,13 @@
 # Changes
 
-## 0.0.11 (2026-05-26)
+## 0.0.12 (2026-05-..)
+
+- Added support for optional dependencies in project files
+- Added --pip-args argument to pass through arguments to pip install during scan
+- Added PipCanary configuration in pyproject.toml
+- Added support for poetry dependencies
+
+## 0.0.11 (2026-05-06)
 
 - Added "locked" requirements file generation
 

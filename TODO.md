@@ -1,8 +1,4 @@
-- Pass through pip args as parameter pip-args like pip-tools
 - Add Proxy support
-- Pass through PIP environment variables if possible
-- Add configuration to pyproject.toml
 - Generate json report
 - Generate SARIF output
-- add caching for already scanned packages.
 - improve documentation

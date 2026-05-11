@@ -1,15 +1,18 @@
 import os
 import unittest
 
-from pipcanary.requirements import Requirements
+from pipcanary.requirements import Requirements, RequirementsError
+
+TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data")
 
 
 class RequirementsTest(unittest.TestCase):
     def setUp(self):
-        self.requirements_file = os.path.join(
-            os.path.dirname(__file__), "requirements.txt"
+        self.requirements_file = os.path.join(TEST_DATA_DIR, "requirements.txt")
+        self.static_project_file = os.path.join(TEST_DATA_DIR, "pyproject-static.toml")
+        self.dynamic_project_file = os.path.join(
+            TEST_DATA_DIR, "pyproject-dynamic.toml"
         )
-        self.project_file = os.path.join(os.path.dirname(__file__), "pyproject.toml")
 
     def test_parse_requirements(self):
         lines = [
@@ -42,12 +45,19 @@ class RequirementsTest(unittest.TestCase):
             "pyyaml",
             "numpy",
         ]
-        self.assertEqual(expected, requirements.requirements)
+        self.assertEqual(expected, requirements.list())
 
     def test_from_project_file(self):
-        requirements = Requirements.from_project_file(self.project_file)
-        expected = ["virtualenv==21.2.0", "tomli==2.4.1"]
-        self.assertEqual(expected, requirements.requirements)
+        requirements = Requirements.from_project_file(self.static_project_file)
+        expected = ["virtualenv==21.2.0", "tomli==2.4.1", "PyQt5", "rich", "click"]
+        self.assertEqual(expected, requirements.list())
+
+    def test_reject_dynamic_project_file(self):
+        try:
+            Requirements.from_project_file(self.dynamic_project_file)
+            self.fail("Should not accept dynamic requirements")
+        except RequirementsError:
+            pass
 
     def test_skip_packages(self):
         requirements = Requirements.from_requirements_file(self.requirements_file)
@@ -62,7 +72,7 @@ class RequirementsTest(unittest.TestCase):
             "flask",
             "pyyaml",
         ]
-        self.assertEqual(expected, reduced_requirements.requirements)
+        self.assertEqual(expected, reduced_requirements.list())
 
     def test_write_to_temporary_file(self):
         requirements = Requirements.from_requirements_file(self.requirements_file)
@@ -83,4 +93,4 @@ class RequirementsTest(unittest.TestCase):
             "flask",
             "pyyaml",
         ]
-        self.assertEqual(expected, requirements_loaded.requirements)
+        self.assertEqual(expected, requirements_loaded._requirements)

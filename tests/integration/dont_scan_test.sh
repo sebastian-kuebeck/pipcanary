@@ -14,14 +14,13 @@ cleanup() {
 trap cleanup EXIT
 
 cat << END > $REQUIREMENTS_FILE 
-    Werkzeug<=3.1.7
-    flask
-    pip<26.0.0
+    Werkzeug
+    pip==26.1
 END
 
 set +e
 
 export PYTHONPATH=./src
 
-python -m pipcanary -r $REQUIREMENTS_FILE 
+python -m pipcanary -r $REQUIREMENTS_FILE --do-not-scan Werkzeug -c 1024 --allow-upload-time 'pip<=2026-04-26T21:00:05' --log-level DEBUG
 rc=$?

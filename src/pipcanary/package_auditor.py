@@ -1,14 +1,14 @@
 import logging
 import json
 
-from typing import Dict, Any, Optional, List, Union, Iterable
+from typing import Dict, Any, Optional, List, Iterable
 from urllib.request import urlopen
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 from shlex import quote
 
-from .errors import InvalidArgumentError, PackageDownloadError, RequirementsError
+from .errors import PackageDownloadError, RequirementsError
 
 logger = logging.getLogger(__name__)
 
@@ -248,22 +248,20 @@ class PackageSource(ABC):
 class PipOptions:
     PYPI_INDEX_URL = "https://pypi.org/pypi/"
 
-    # temporary_directory: Optional[str],
-    # additional_directory: Optional[str],
-    # trace_file: Optional[str],
-
     def __init__(
         self,
         temporary_directory: Optional[str] = None,
         additional_directory: Optional[str] = None,
         index_url: Optional[str] = None,
         extra_index_url: Optional[str] = None,
+        additional_args: Optional[str] = None,
     ) -> None:
         self.default_index_url = self.PYPI_INDEX_URL
         self._index_url = index_url
         self._extra_index_url = extra_index_url
         self.temporary_directory = temporary_directory
         self.additional_directory = additional_directory
+        self.additional_args = additional_args
 
     @staticmethod
     def _normalize_url(url: str) -> str:
@@ -285,7 +283,7 @@ class PipOptions:
         return env
 
     def encode_for_shell(self) -> str:
-        s = ""
+        s = f"{self.additional_args} " if self.additional_args else ""
         if self._index_url:
             s += "--index-url %s" % quote(self._index_url)
         if self._extra_index_url:
@@ -415,48 +413,22 @@ class AuditSelection:
 
     def __init__(
         self,
-        max_upload_time: Optional[str] = None,
+        max_upload_time: Optional[datetime] = None,
         cool_down_phase_days: Optional[int] = None,
-        allowed_upload_times: Optional[Union[List[str], str]] = None,
-        ignore_vulns: Optional[Union[List[str], str]] = None,
+        allowed_upload_times: Optional[Dict[str, datetime]] = None,
+        ignore_vulns: Optional[List[str]] = None,
         current_time: Optional[datetime] = None,
     ) -> None:
         self.current_time: datetime = current_time or datetime.now()
         self.cool_down_phase_days = cool_down_phase_days or self.COOL_DOWN_PHASE_DAYS
-        try:
-            self._max_upload_time: Optional[datetime] = (
-                datetime.fromisoformat(max_upload_time) if max_upload_time else None
-            )
-        except ValueError:
-            raise InvalidArgumentError(
-                "Malformed datetime passed with argument max_upload_time"
-            )
-
-        self._max_upload_time_for: Dict[str, datetime] = {}
-
-        if isinstance(allowed_upload_times, str):
-            allowed_upload_times = [allowed_upload_times]
-
-        rules = allowed_upload_times or []
-        for rule in rules:
-            try:
-                package, max_upload_time = rule.split("<=")
-                self._max_upload_time_for[package] = datetime.fromisoformat(
-                    max_upload_time
-                )
-            except ValueError:
-                raise InvalidArgumentError(
-                    "Malformed argument max_upload_time. Expected <package_name><=<max upload time>"
-                )
-        if isinstance(ignore_vulns, str):
-            ignore_vulns = [ignore_vulns]
-
+        self.max_upload_time = max_upload_time or self.current_time - timedelta(
+            days=int(self.cool_down_phase_days)
+        )
+        self.allowed_upload_times: Dict[str, datetime] = allowed_upload_times or {}
         self.ignore_vulns = set(ignore_vulns or [])
 
-    def max_upload_time(self, package: str) -> datetime:
-        return self._max_upload_time_for.get(package, self._max_upload_time) or (
-            self.current_time - timedelta(days=int(self.cool_down_phase_days))
-        )
+    def max_upload_time_for(self, package: str) -> datetime:
+        return self.allowed_upload_times.get(package, self.max_upload_time)
 
 
 class AuditReport:
@@ -545,7 +517,7 @@ class PackageAuditor:
                 continue
 
             if upload_time > (
-                latest_upload_time := selection.max_upload_time(package.name)
+                latest_upload_time := selection.max_upload_time_for(package.name)
             ):
                 self.observer.package_upload_too_recently(
                     package, upload_time, latest_upload_time

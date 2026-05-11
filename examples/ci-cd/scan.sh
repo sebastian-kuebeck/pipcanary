@@ -2,10 +2,12 @@
 
 set -e
 
+export PATH="$VIRTUAL_ENV/bin:$PATH"
+
 #
 # Scans requirements file and generates a "locked" version with hashes
 #
-pipcanary -r /var/shared/requirements.txt -l /var/shared/requirements-locked.txt
+pipcanary -p /var/shared/pyproject.toml -l /var/shared/requirements-locked.txt --allow-upload-time='urllib3<=2026-05-07T16:13:18'
 
 #
 # Generates an SBOM from the locked version requirements file

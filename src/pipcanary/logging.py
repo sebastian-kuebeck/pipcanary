@@ -2,8 +2,6 @@ import logging
 
 from logging import StreamHandler
 
-from .errors import InvalidArgumentError
-
 
 class BiStreamHandler(StreamHandler):
     def emit(self, record):
@@ -25,12 +23,6 @@ LOG_LEVELS = ["FATAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 
 
 def set_up_logging(format: str, level: str):
-    if level not in LOG_LEVELS:
-        raise InvalidArgumentError(
-            "Invalid log level %s. Supported levels are: %s."
-            % (level, ", ".join(LOG_LEVELS))
-        )
-
     root = logging.getLogger()
     root.setLevel(level)
 

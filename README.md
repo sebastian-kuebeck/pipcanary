@@ -139,7 +139,7 @@ usage: pipcanary [-h] [--version] [-r REQUIREMENT] [-p PROJECT] [--max-upload-ti
                  [--extra-index-url EXTRA_INDEX_URL] [--ignore-vuln IGNORE_VULN] [--log-level LOG_LEVEL]
                  [--temporary-directory TEMPORARY_DIRECTORY] [-l LOCKED_REQUIREMENT]
 
-PipCanary 0.0.11 detects supply chain attacks and known vulnerabilities in python dependencies
+PipCanary 0.0.12 detects supply chain attacks and known vulnerabilities in python dependencies
 
 options:
   -h, --help            show this help message and exit
@@ -225,9 +225,9 @@ There are natural limitations to all checks PipCanary performs so **running PipC
 
 ## Similar Projects
 
+- [muad-dib](https://github.com/DNSZLSK/muad-dib)
 - [pip-audit](https://github.com/pypa/pip-audit)
 - [guarddog](https://github.com/DataDog/guarddog)
-- [pip-tools](https://pypi.org/project/pip-tools/)
 
 ## Further Information on PyPi Suppy Chain Attacks
 

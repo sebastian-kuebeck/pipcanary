@@ -1,0 +1,11 @@
+[project]
+name = "parameters-test"
+dependencies = [
+  "virtualenv==21.2.0", 
+  "tomli==2.4.1"
+]
+
+[tool.pipcanary]
+log_level="DEBUG"
+ignore_vuln=['GHSA-5239-wwwm-4pmq']
+do_not_scan=["virtualenv"]

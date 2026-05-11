@@ -1,0 +1,4 @@
+[project]
+name = "dynamic-test"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+requires-python = ">=3.12"
