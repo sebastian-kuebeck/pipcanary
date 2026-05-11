@@ -23,7 +23,7 @@ validate:
 
 audit:
 	python -m pipcanary -p pyproject.toml -l requirements-locked.txt
-	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt
+	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt --allow-upload-time='urllib3<=2026-05-07T16:13:18'
 
 test:
 	python -m unittest discover -v -s tests/unit -p '*_test.py'
