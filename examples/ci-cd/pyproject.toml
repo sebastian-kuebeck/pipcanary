@@ -13,6 +13,5 @@ dependencies = [
 "pyyaml",
 "numpy",
 "pip==26.1",
-"idna<=3.13"
+"idna<=3.15"
 ]
-
