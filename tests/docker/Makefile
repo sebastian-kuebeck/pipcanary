@@ -12,5 +12,6 @@ build: dist
 
 run:
 	mkdir -p shared
+	rm -rf shared/*
 	cp ../../pyproject.toml shared/
 	docker run -v "$(PWD)/shared:/var/shared" --privileged pipcanary-docker-test

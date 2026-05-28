@@ -1,6 +1,10 @@
 # Changes
 
-## 0.0.12 (2026-05-..)
+## 0.1.0 (2026-05-28)
+
+- Added proper handling of requirements file options
+
+## 0.0.12 (2026-05-20)
 
 - Added support for optional dependencies in project files
 - Added --pip-args argument to pass through arguments to pip install during scan

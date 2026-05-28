@@ -1,6 +1,6 @@
 [project]
 name = "pipcanary"
-version = "0.0.12"
+version = "0.1.0"
 authors = [
   { name="Sebastian Kuebeck", email="sebastian.kuebeck@encab.io" },
 ]

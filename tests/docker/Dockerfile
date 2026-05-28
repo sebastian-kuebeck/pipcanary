@@ -37,7 +37,7 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 #---------------------------------------------
 # Install SBOM generation tool
 #
-RUN pip install cyclonedx-bom~=7.3.0
+RUN pip install cyclonedx-bom==7.3.0 debsbom==0.7.2
 
 # --------------------------------------------
 # Install PipCanary from wheel

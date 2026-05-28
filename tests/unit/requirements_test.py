@@ -13,6 +13,9 @@ class RequirementsTest(unittest.TestCase):
         self.dynamic_project_file = os.path.join(
             TEST_DATA_DIR, "pyproject-dynamic.toml"
         )
+        self.requirements_file_with_options = os.path.join(
+            TEST_DATA_DIR, "requirements-with-options.txt"
+        )
 
     def test_parse_requirements(self):
         lines = [
@@ -46,6 +49,16 @@ class RequirementsTest(unittest.TestCase):
             "numpy",
         ]
         self.assertEqual(expected, requirements.list())
+
+    def test_from_requirements_file_with_options(self):
+        try:
+            Requirements.from_requirements_file(self.requirements_file_with_options)
+            self.fail()
+        except RequirementsError as e:
+            self.assertEqual(
+                f"Failed to load requirements file {self.requirements_file_with_options}: Error in line 11: options are not supported.",
+                str(e),
+            )
 
     def test_from_project_file(self):
         requirements = Requirements.from_project_file(self.static_project_file)

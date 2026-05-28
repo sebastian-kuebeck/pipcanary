@@ -22,14 +22,16 @@ class Requirements:
                 if not requirements:
                     raise RequirementsError(f"No requirements found in {path}")
                 return requirements
-        except IOError as e:
-            raise RequirementsError(f"Failed to load project file: {path}: {str(e)}")
+        except (IOError, RequirementsError) as e:
+            raise RequirementsError(
+                f"Failed to load requirements file {path}: {str(e)}"
+            )
 
     @classmethod
     def parse_requirements(cls, lines: List[str]) -> List[str]:
         requirements = []
         multiline_requirement: str = ""
-        for line in lines:
+        for n, line in enumerate(lines):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
@@ -43,6 +45,11 @@ class Requirements:
                 multiline_requirement = ""
             else:
                 requirement = line
+
+            if requirement.strip().startswith("-"):
+                raise RequirementsError(
+                    f"Error in line {n+1}: options are not supported."
+                )
 
             requirements.append(requirement)
         if multiline_requirement:

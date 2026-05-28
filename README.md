@@ -139,7 +139,7 @@ usage: pipcanary [-h] [--version] [-r REQUIREMENT] [-p PROJECT] [--max-upload-ti
                  [--extra-index-url EXTRA_INDEX_URL] [--ignore-vuln IGNORE_VULN] [--log-level LOG_LEVEL]
                  [--temporary-directory TEMPORARY_DIRECTORY] [-l LOCKED_REQUIREMENT]
 
-PipCanary 0.0.12 detects supply chain attacks and known vulnerabilities in python dependencies
+PipCanary 0.1.0 detects supply chain attacks and known vulnerabilities in python dependencies
 
 options:
   -h, --help            show this help message and exit
