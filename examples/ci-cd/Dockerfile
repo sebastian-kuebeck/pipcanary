@@ -37,7 +37,7 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 #---------------------------------------------
 # Install SBOM generation tool
 #
-RUN pip install pipcanary==0.1.0 cyclonedx-bom==7.3.0 debsbom==0.7.2
+RUN pip install pipcanary==0.1.1 cyclonedx-bom==7.3.0 debsbom==0.7.2
 
 COPY scan.sh .
 

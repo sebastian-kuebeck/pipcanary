@@ -3,15 +3,15 @@ name = "test"
 version = "0.0.1"
 
 dependencies = [
-"botocore<=1.42.81",
-"boto3<=1.42.81",
-"click<=8.3.1",
-"Werkzeug<=3.1.7",
-"charset-normalizer<=3.4.6",
+"botocore",
+"boto3",
+"click",
+"Werkzeug",
+"charset-normalizer",
 "requests",
 "flask",
 "pyyaml",
 "numpy",
-"pip==26.1",
-"idna<=3.15"
+"pip>=26.1.2",
+"idna"
 ]
