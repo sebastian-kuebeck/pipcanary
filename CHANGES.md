@@ -1,5 +1,8 @@
 # Changes
 
+## 0.1.1 (2026-07-14)
+- Updated dependencies
+
 ## 0.1.0 (2026-05-28)
 
 - Added proper handling of requirements file options

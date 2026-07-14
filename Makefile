@@ -1,6 +1,7 @@
 .PHONY:	clean_dist dist test validate format apidoc html doc browse publish_test build_evilpack
 
 export PYTHONPATH=src:tests
+cutoff := $(shell date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')
 
 clean_dist:
 	rm -rf dist/*
@@ -22,8 +23,8 @@ validate:
 	bandit -q -r src tests --severity-level medium
 
 audit:
-	python -m pipcanary -p pyproject.toml -l requirements-locked.txt
-	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt
+	python -m pipcanary -p pyproject.toml -l requirements-locked.txt --pip-args="--uploaded-prior-to=$(cutoff)"
+	python -m pipcanary -r requirements-dev.txt -l requirements-dev-locked.txt --pip-args="--uploaded-prior-to=$(cutoff)"
 
 test:
 	python -m unittest discover -v -s tests/unit -p '*_test.py'

@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 cat << END > $REQUIREMENTS_FILE 
-    $WHEEL_PATH/evilpack-0.1.0-py3-none-any.whl
+    $WHEEL_PATH/evilpack-0.1.1-py3-none-any.whl
 END
 
 set +e

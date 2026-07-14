@@ -1,6 +1,6 @@
 [project]
 name = "pipcanary"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="Sebastian Kuebeck", email="sebastian.kuebeck@encab.io" },
 ]
@@ -26,13 +26,9 @@ classifiers = [
 
 
 dependencies = [
-  "distlib<=0.4.0",
-  "filelock<=3.25.2",
-  "platformdirs<=4.9.4",
-  "tomli<=2.4.1",
-  "virtualenv<=21.2.0",
-  "pip==26.1",
-  "python-discovery<=1.2.2"
+  "tomli>=2.4.1",
+  "virtualenv>=21.2.0",
+  "pip>=26.1.2"
 ]
 
 [project.urls]

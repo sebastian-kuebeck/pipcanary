@@ -47,7 +47,7 @@ from .package_auditor import (
     AuditReport,
 )
 
-PIPCANARY_VERSION = "0.1.0"
+PIPCANARY_VERSION = "0.1.1"
 
 
 class SuspiciousAccessDetected(Exception):
