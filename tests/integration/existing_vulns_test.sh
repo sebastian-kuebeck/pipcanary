@@ -16,7 +16,7 @@ trap cleanup EXIT
 cat << END > $REQUIREMENTS_FILE 
     pygments<=1.1
     flask<=3.1.2
-    pip>=26.1.2
+    pip>=26.2.0
 END
 
 set +e
